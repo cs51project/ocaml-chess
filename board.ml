@@ -7,7 +7,7 @@ sig
   type move = Standard of piece * piece_position | Castle of castle | 
   type board
 
-  val std_board : board (* standard starting board *)
+  val init_board : board (* standard starting board *)
 
   val all_moves : board -> move list (* all valid moves *)
   val all_pieces : board -> piece list (* all pieces on current board *)
