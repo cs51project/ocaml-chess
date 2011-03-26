@@ -29,7 +29,9 @@ module ChessSet(B: BOARD) : (SET with type piece = B.t) =
     type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
     type piece_color = Black | White
     type piece = {name : piece_type; color: piece_color; position: piece_position}
-    type move = Move of ( piece_type * piece_position ) | Castle of castle    type board = piece list (* list of active pieces *)
+    type move = Move of ( piece_type * piece_position ) | Castle of castle    
+    type board = piece list (* list of active pieces *)
+    let wr1 = {name=Rook;piece_color=white;position=(0,0)} (* example piece? *)
     let init_board () =  [wr1;...;br2];
     let all_moves (board: board) : move list = [Castle]; (*incomplete*)
     
