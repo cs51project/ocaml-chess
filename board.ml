@@ -4,7 +4,7 @@ sig
   type piece_type
   type piece_color
   type piece
-  type move = Move of ( piece_type * piece_position ) | Castle of castle  
+  type move 
   type board
 
   val init_board : unit -> board (* standard starting board *)
