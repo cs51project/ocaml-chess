@@ -5,15 +5,19 @@ sig
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type castle = Queenside | Kingside
-  type move = Standard of piece * position | Castle of castle
+  type move = Standard of position * position | Castle of castle
   type board
 
   (* standard starting board *)
   val init_board : board
+  (* which color (king) is to play *)
+  val whose_turn : board -> piece
   (* all valid moves *)
   val all_moves : board -> move list
   (* all positions on current board *)
   val all_pieces : board -> (position, piece) list
+  (* piece at position *)
+  val piece_at : position -> piece option
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
   (* returns color of king in check or None *)
@@ -28,7 +32,7 @@ struct
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type castle = Queenside | Kingside
-  type move = Standard of piece * position | Castle of castle
+  type move = Standard of position * position | Castle of castle
 
   module PositionMap = Map.Make(struct
       type t = piece_position
@@ -61,5 +65,17 @@ struct
   let all_pieces b =
     PartitionMap.bindings b
 
-  
+  let handle_std b p1 p2 =
+    match piece_at p1 with
+      | None -> b
+      | Some pc ->
+        (match pc with
+           | Black pc ->
+           | White pc ->
+	)
+
+  let play b m =
+    match m with
+      | Standard (p1, p2) -> handle_std b p1 p2
+      | Castle side -> handle_castle b side
 end
