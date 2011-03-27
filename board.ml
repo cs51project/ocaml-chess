@@ -5,6 +5,7 @@ sig
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type castle = Queenside | Kingside
+  type En_passant = 
   type move = Standard of piece * position | Castle of castle
   type board
 
