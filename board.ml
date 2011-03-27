@@ -58,5 +58,8 @@ struct
     in
       List.fold_left add_binding PositionMap.empty init_bindings
 
-  let all_pieces = 
+  let all_pieces b =
+    PartitionMap.bindings b
+
+  
 end
