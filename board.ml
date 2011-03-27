@@ -15,11 +15,11 @@ sig
   (* all positions on current board *)
   val all_pieces : board -> (position, piece) list
   (* should return None if the move is invalid *)
-  val move : board -> move -> board option
+  val play : board -> move -> board option
   (* returns color of king in check or None *)
-  val check : dict -> piece option
+  val check : board -> piece option
   (* returns color of dead king or None *)
-  val checkmate: dict -> piece option
+  val checkmate: board -> piece option
 end
 
 module MapBoard : BOARD =
@@ -46,7 +46,7 @@ struct
   
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
-    let names = [Rook; Knight; Bishop; Queen; King; Bishop; Knight; Rook]
+    let names = [Rook; Knight; Bishop; Queen; King; Bishop; Knight; Rook] in
     let pc_files = List. combine files names in
     let init_pcs = List.fold_left
       (fun r (x, pc) -> ((x, 7), Black pc) :: ((x, 0), White pc) :: r) [] pc_files in
@@ -58,5 +58,5 @@ struct
     in
       List.fold_left add_binding PositionMap.empty init_bindings
 
-  
+  let all_pieces = 
 end
