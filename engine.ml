@@ -1,9 +1,8 @@
-open Board
+open Board ;
 
 module type ENGINE =
 sig
-  type engine
-  val std_engine
-  val model : BOARD.board -> engine
-  val play : engine -> BOARD.move
+  type board
+  type move
+  val strat : board -> move
 end
