@@ -1,4 +1,4 @@
-open Board
+open Board;
 
 module type ENGINE =
 sig
