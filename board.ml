@@ -35,7 +35,7 @@ struct
   type move = Standard of position * position | Castle of castle
 
   module PositionMap = Map.Make(struct
-      type t = piece_position
+      type t = position
       let compare p1 p2 =
         let (p1, p2) = ((p1r, p1f), (p2r, p2f)) in
           if p1r < p2r then -1
@@ -46,7 +46,8 @@ struct
             else 0
     end)
 
-  type board = piece PositionMap.t
+  (* a board is a map of location => piece together with a side 'to play' *)
+  type board = (piece PositionMap.t) * piece 
   
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
@@ -60,10 +61,11 @@ struct
     let add_binding board ((x, y), pc) =
       PositionMap.add (x, y) pc board
     in
-      List.fold_left add_binding PositionMap.empty init_bindings
+      (List.fold_left add_binding PositionMap.empty init_bindings, White King)
 
   let all_pieces b =
-    PartitionMap.bindings b
+    let (map, side) = b in
+      PartitionMap.bindings map
 
   let handle_std b p1 p2 =
     match piece_at p1 with
