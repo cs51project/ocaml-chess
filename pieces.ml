@@ -7,51 +7,85 @@ module ChessSet(B: BOARD) : (SET with type piece = B.t) =
     
    end
 
-
-let rec up x y p lst = 
+(*
+let rec up x y p lst b = 
   if y+1 > 7 then lst else(
      match MapBoard.lookup (x,y+1) b with
-       | None -> up y+1 (x,y+1)::lst
-       | Some color -> if p = color then lst else (x,y+1)::lst ) 
+       | None -> up x y+1 (x,y+1)::lst b
+       | Some color -> if p = color then lst else (x,y+1)::lst) 
 ;;
-let rec down x y p lst = 
+let rec down x y p lst b = 
   if y-1 < 0 then lst else(
      match MapBoard.lookup (x,y-1) b with
-       | None -> down y-1 (x,y-1)::lst
-       | Some color -> if p = color then lst else (x,y-1)::lst ) 
+       | None -> down x y-1 (x,y-1)::lst b
+       | Some color -> if p = color then lst else (x,y-1)::lst) 
 ;;     
-let rec right x y p lst = 
+let rec right x y p lst b = 
   if x+1 > 7 then lst else(
     match MapBoard.lookup (x+1,y) b with
-      | None -> right x+1 (x+1,y)::lst
-      | Some color -> if p = color then lst else (x+1,y)::lst ) 
+      | None -> right x+1 y (x+1,y)::lst b
+      | Some color -> if p = color then lst else (x+1,y)::lst) 
 ;;
-let rec left x y p lst = 
+let rec left x y p lst b = 
   if x-1 < 0 then lst else(
     match MapBoard.lookup (x-1,y) b with
-      | None -> left x-1 (x-1,y)::lst
-      | Some color -> if p = color then lst else (x-1,y)::lst )
+      | None -> left x-1 y (x-1,y)::lst b
+      | Some color -> if p = color then lst else (x-1,y)::lst)
 ;;
-
-
-
-
+let rec upright x y p lst b = 
+  if y+1 > 7 | x+1 > 7 then lst else(
+     match MapBoard.lookup (x+1,y+1) b with
+       | None -> upright x+1 y+1 (x+1,y+1)::lst b
+       | Some color -> if p = color then lst else (x+1,y+1)::lst)
+;;
+let rec upleft x y p lst b = 
+  if y+1 > 7 | x-1 < 0 then lst else(
+     match MapBoard.lookup (x-1,y+1) b with
+       | None -> upleft x-1 y+1 (x-1,y+1)::lst b
+       | Some color -> if p = color then lst else (x-1,y+1)::lst)
+let rec upleft x y p lst b = 
+  if y+1 > 7 | x-1 < 0 then lst else(
+     match MapBoard.lookup (x-1,y+1) b with
+       | None -> upleft x-1 y+1 (x-1,y+1)::lst b
+       | Some color -> if p = color then lst else (x-1,y+1)::lst) *)
 
 
 let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
+  match pos with 
+    |(x,y) ->	   
 
-  (* Checks position for a blocking piece returns BOOL *)
-  let check_p p1 = ((MapBoard.lookup p1 b) = p) in
-	   
-  let pawn_moves () = 
-    match pos with 
-      |(x,y) -> if p = Black then (x,y-1)::base else (x,y+1)::base in 
+  let rec direction (x:int) (y:int) (lst:position list) (b:board)
+      (i: int) (j:int) = 
+    if x+i < 0 | x+i > 7 | y+j < 0 | y+j > 7  then lst else(
+      match MapBoard.lookup (x+j,y+k) b with
+	| None -> direction x+i y+j (x+i,y+j)::lst b i j
+	| Some color -> if p = color then lst else (x+i,y+j)::lst) in
 
-  let rook_moves () =
-    match pos with
-      |(x,y) -> (up x y base)@(down x y base)@(left x y base)@(right x y base) in
-	 
+  let pawn_moves () = if p = Black then let j = -1 else let j = 1 in
+      let m = Mapboard.lookup (x,y+j) in
+      let r = Mapboard.lookup (x+1,y+j) in 
+      let l = Mapboard.lookup (x-1,y+j) in
+      let mid	match m with 
+	|None -> (x,y+j)::base
+	|Some _ -> base in
+      let right match r with 
+	|None -> base
+	|Some color -> if p = color then base else (x+1,y+j) in
+      let left match l with 
+	|None -> base
+	|Some color -> if p = color then base else (x-1,y+j) in
+      left::mid::right in
+       
+  let rook_moves () = (direction x y base b 1 0) @ 
+                      (direction x y base b 0 1) @
+	              (direction x y base b -1 0) @
+	              (direction x y base b 0 -1) in
+  
+  let bishop_moves () = (direction x y p base b 1 1) @
+	                (direction x y p base b -1 1) @
+	                (direction x y p base b 1 -1) @
+	                (direction x y p base b -1 -1) @ in
 	
   
 
@@ -59,7 +93,7 @@ let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board)
     |Pawn   -> pawn_moves  
     |Rook   -> rook_moves
     |Knight ->
-    |Bishop ->
-    |Queen  ->
+    |Bishop -> bishop_moves
+    |Queen  -> rook_moves @ bishop moves
     |King   ->
 
