@@ -1,6 +1,6 @@
 module type BOARD = 
 sig
-  (* A1 is (0, 0); H8 is (7, 7) *)
+  (* a1 is (0, 0); h8 is (7, 7) *)
   type position = int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
@@ -59,7 +59,7 @@ struct
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
     let names = [Rook; Knight; Bishop; Queen; King; Bishop; Knight; Rook] in
-    let pc_files = List. combine files names in
+    let pc_files = List.combine files names in
     let init_pcs = List.fold_left
       (fun r (x, pc) -> ((x, 7), Black pc) :: ((x, 0), White pc) :: r) [] pc_files in
     let init_pawns = List.fold_left 
@@ -76,7 +76,7 @@ struct
       | Black _ -> White _
 
   let all_pieces b =
-    let (map, side) = b in
+    let (map, side)open = b in
       PartitionMap.bindings map
 
   let play b m =
