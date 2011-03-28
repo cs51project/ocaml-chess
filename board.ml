@@ -1,12 +1,11 @@
 module type BOARD = 
 sig
-  (* A1 is (0, 0); H8 is (7, 7) *)
+  (* a1 is (0, 0); h8 is (7, 7) *)
   type position = int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type castle = Queenside | Kingside
-  type en_passant = position * position
-  type move = Standard of piece * position | Castle of castle
+  type move = Standard of piece * position | Castle of castle | Passant of piece * position | Promote of piece_type * position
   type board
 
   (* standard starting board *)
@@ -29,7 +28,7 @@ struct
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type castle = Queenside | Kingside
-  type move = Standard of piece * position | Castle of castle
+  type move = Standard of piece * position | Castle of castle | Passant of piece * position | Promote of piece_type * position
 
   module PositionMap = Map.Make(struct
       type t = piece_position
