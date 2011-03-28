@@ -94,6 +94,6 @@ let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board)
     |Rook   -> rook_moves
     |Knight ->
     |Bishop -> bishop_moves
-    |Queen  -> rook_moves @ bishop moves
+    |Queen  -> rook_moves @ bishop_moves
     |King   ->
 
