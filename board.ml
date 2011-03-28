@@ -4,33 +4,40 @@ sig
   type position = int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
+  (* encode Black as Black King, White as White King *)
+  type side = piece
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
   type board
 
   (* standard starting board *)
   val init_board : board
-  (* which color (king) is to play *)
-  val whose_turn : board -> piece
+  (* which color is to play *)
+  val whose_turn : board -> side
+  (* is move valid? *)
+  val is_valid : board -> move -> bool
   (* all valid moves *)
   val all_moves : board -> move list
   (* all positions on current board *)
   val all_pieces : board -> (position, piece) list
-  (* piece at position *)
-  val piece_at : position -> piece option
+  (* what piece is at given position *)
+  val piece_at : board -> position -> piece option
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
-  (* returns color of king in check or None *)
-  val check : board -> piece option
-  (* returns color of dead king or None *)
-  val checkmate: board -> piece option
+  (* returns color in check or None *)
+  val check : board -> side option
+  (* returns losing color or None *)
+  val checkmate: board -> side option
 end
+
+
 
 module MapBoard : BOARD =
 struct
   type position = int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
+  type side = piece
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
 
@@ -47,7 +54,7 @@ struct
     end)
 
   (* a board is a map of location => piece together with a side 'to play' *)
-  type board = (piece PositionMap.t) * piece 
+  type board = (piece PositionMap.t) * side 
   
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
@@ -63,21 +70,25 @@ struct
     in
       (List.fold_left add_binding PositionMap.empty init_bindings, White King)
 
+  let flip_side (s: side) =
+    match s with
+      | White _ -> Black _
+      | Black _ -> White _
+
   let all_pieces b =
     let (map, side) = b in
       PartitionMap.bindings map
 
-  let handle_std b p1 p2 =
-    match piece_at p1 with
-      | None -> b
-      | Some pc ->
-        (match pc with
-           | Black pc ->
-           | White pc ->
-	)
-
   let play b m =
-    match m with
-      | Standard (p1, p2) -> handle_std b p1 p2
-      | Castle side -> handle_castle b side
+    if is_valid b m then
+      let (map, side) = b in
+        match m with
+          | Standard (p1, p2) ->
+              let pc = piece_at b p1 in
+              let new_map = PositionMap.remove p1
+                (PositionMap.add p2 pc map) in
+                  (new_map, flip_side side)
+          | Castle Queenside ->
+              
+          | Castle Kingside ->
 end
