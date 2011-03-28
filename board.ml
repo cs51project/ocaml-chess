@@ -47,7 +47,7 @@ struct
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
     let names = [Rook; Knight; Bishop; Queen; King; Bishop; Knight; Rook] in
-    let pc_files = List. combine files names in
+    let pc_files = List.combine files names in
     let init_pcs = List.fold_left
       (fun r (x, pc) -> ((x, 7), Black pc) :: ((x, 0), White pc) :: r) [] pc_files in
     let init_pawns = List.fold_left 
