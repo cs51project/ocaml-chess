@@ -28,6 +28,8 @@ sig
   val check : board -> side option
   (* returns losing color or None *)
   val checkmate: board -> side option
+  (* returns piece option or None *)
+  val lookup: pos -> board -> piece option
 end
 
 
