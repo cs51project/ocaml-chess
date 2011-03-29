@@ -1,16 +1,9 @@
-module ChessSet(B: BOARD) : (SET with type piece = B.t) = 
-  struct
-    open Board ;;
-    type board = piece list;;
-    type piece_type = B.piece_type ;;
-    type init_board = 
-    
-   end
+
 
 let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
   match pos with 
-    |(x,y) ->	   
+    |Pos (x,y) -> 	   
 
   let rec direction (x:int) (y:int) (lst:position list) (b:board)
       (i: int) (j:int) = 
