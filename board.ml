@@ -1,7 +1,7 @@
 module type BOARD = 
 sig
   (* a1 is (0, 0); h8 is (7, 7) *)
-  type position = int * int
+  type position
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   (* encode Black as Black King, White as White King *)
@@ -9,7 +9,10 @@ sig
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
   type board
+    (* add the not valid position exception *)
 
+  (* build position *)
+  val create_position : (int * int) -> bool
   (* standard starting board *)
   val init_board : board
   (* which color is to play *)
@@ -36,7 +39,7 @@ end
 
 module MapBoard : BOARD =
 struct
-  type position = int * int
+  type position = Pos of int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type side = piece
@@ -59,6 +62,9 @@ struct
   type board_config = {toPlay : side;}
   type board = (piece PositionMap.t) * board_config 
   
+  let create_position (x:int) (y:int) : position =
+    if (x>=0&&x<=7) && (y>=0&&y<=7) then Pos (x,y) 
+    else raise Exception "Not a valid position"
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
     let names = [Rook; Knight; Bishop; Queen; King; Bishop; Knight; Rook] in
@@ -88,9 +94,21 @@ struct
     let (map, cfg) = b in
       PartitionMap.bindings map
 
+  let piece2fn p = 
+    match p with 
+      | Pawn -> is_valid_pawn
+      | Knight -> is_valid_knight
+      | Bishop -> is_valid_bishop
+      | ...
+
   let is_valid b mv =
     match mv with
       | Standard (p1, p2) ->
+	  let pc = piece_at b p1 in
+	    match pc with
+	      | White p -> (piece2fn p) b mv 1
+	      | Black p -> (piece2fn p) b mv -1
+	  
           let pc = piece_at b p1 in
             (match pc with
                | White Pawn -> is_valid_pawn b mv 1

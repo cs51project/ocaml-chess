@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 
 
+=======
+(* figure out where we are going to put this *)
+>>>>>>> 6f8699c06a8a9c75a12608d462bdd1949cde59af
 let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
   match pos with 
