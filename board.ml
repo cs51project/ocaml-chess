@@ -22,7 +22,7 @@ sig
   val init_board : board
   (* which color is to play *)
   val to_play : board -> side
-  (* all positions on current board *)
+  (* all pieces on current board *)
   val all_pieces : board -> (position, piece) list
   (* is move valid? *)
   val is_valid : board -> move -> bool
