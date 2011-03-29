@@ -7,49 +7,6 @@ module ChessSet(B: BOARD) : (SET with type piece = B.t) =
     
    end
 
-(*
-let rec up x y p lst b = 
-  if y+1 > 7 then lst else(
-     match MapBoard.lookup (x,y+1) b with
-       | None -> up x y+1 (x,y+1)::lst b
-       | Some color -> if p = color then lst else (x,y+1)::lst) 
-;;
-let rec down x y p lst b = 
-  if y-1 < 0 then lst else(
-     match MapBoard.lookup (x,y-1) b with
-       | None -> down x y-1 (x,y-1)::lst b
-       | Some color -> if p = color then lst else (x,y-1)::lst) 
-;;     
-let rec right x y p lst b = 
-  if x+1 > 7 then lst else(
-    match MapBoard.lookup (x+1,y) b with
-      | None -> right x+1 y (x+1,y)::lst b
-      | Some color -> if p = color then lst else (x+1,y)::lst) 
-;;
-let rec left x y p lst b = 
-  if x-1 < 0 then lst else(
-    match MapBoard.lookup (x-1,y) b with
-      | None -> left x-1 y (x-1,y)::lst b
-      | Some color -> if p = color then lst else (x-1,y)::lst)
-;;
-let rec upright x y p lst b = 
-  if y+1 > 7 | x+1 > 7 then lst else(
-     match MapBoard.lookup (x+1,y+1) b with
-       | None -> upright x+1 y+1 (x+1,y+1)::lst b
-       | Some color -> if p = color then lst else (x+1,y+1)::lst)
-;;
-let rec upleft x y p lst b = 
-  if y+1 > 7 | x-1 < 0 then lst else(
-     match MapBoard.lookup (x-1,y+1) b with
-       | None -> upleft x-1 y+1 (x-1,y+1)::lst b
-       | Some color -> if p = color then lst else (x-1,y+1)::lst)
-let rec upleft x y p lst b = 
-  if y+1 > 7 | x-1 < 0 then lst else(
-     match MapBoard.lookup (x-1,y+1) b with
-       | None -> upleft x-1 y+1 (x-1,y+1)::lst b
-       | Some color -> if p = color then lst else (x-1,y+1)::lst) *)
-
-
 let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
   match pos with 
@@ -94,6 +51,6 @@ let generate_move (pos: position) (pt:piece_type) (p:piece) (b:board)
     |Rook   -> rook_moves
     |Knight ->
     |Bishop -> bishop_moves
-    |Queen  -> rook_moves @ bishop moves
+    |Queen  -> rook_moves @ bishop_moves
     |King   ->
 
