@@ -12,7 +12,7 @@ sig
     (* add the not valid position exception *)
 
   (* build position *)
-  val create_position : (int * int) -> bool
+  val create_pos : (int * int) -> Pos
   (* standard starting board *)
   val init_board : board
   (* which color is to play *)
@@ -24,15 +24,13 @@ sig
   (* all valid moves *)
   val all_moves : board -> move list
   (* what piece is at given position *)
-  val piece_at : board -> position -> piece option
+  val lookup : position -> board -> piece option
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
   (* returns color in check or None *)
   val check : board -> side option
   (* returns losing color or None *)
   val checkmate: board -> side option
-  (* returns piece option or None *)
-  val lookup: pos -> board -> piece option
 end
 
 
@@ -62,7 +60,7 @@ struct
   type board_config = {toPlay : side;}
   type board = (piece PositionMap.t) * board_config 
   
-  let create_position (x:int) (y:int) : position =
+  let create_pos (x:int) (y:int) : position =
     if (x>=0&&x<=7) && (y>=0&&y<=7) then Pos (x,y) 
     else raise Exception "Not a valid position"
   let init_board = 
