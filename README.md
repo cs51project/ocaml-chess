@@ -1,3 +1,5 @@
+#!ocaml
+
 # Learning Chess Engine #
 ## CS51 Project Functional Specification ##
 
