@@ -62,6 +62,5 @@ struct
         | [] -> None
         | hd::tl -> 
             Some (List.fold_left better_move hd moves)
-      
 end
 
