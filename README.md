@@ -1,7 +1,8 @@
 # Learning Chess Engine #
 ## CS51 Project Functional Specification ##
 
-Identification: 
+Identification:
+
 Han He : hanhe333@gmail.com
 Robert Hero: robertmhero@gmail.com
 David Palmer: dpalmer93@gmail.com
