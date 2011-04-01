@@ -6,7 +6,6 @@ struct
   type order = Less | Equal | Greater
 end
 
-
 module type EVAL =
 sig
   type board
@@ -21,7 +20,6 @@ module type ENGPARAMS =
 sig
   val depth : int
 end
-
 
 module type ENGINE =
 sig
