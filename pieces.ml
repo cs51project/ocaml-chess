@@ -3,17 +3,27 @@ open Board
 (* Does not check if King is in 'check' when generating moves. Must 
  * do that before passing position to this function. *)
 
-let generate_moves (pos: position) (pt:piece_type) (p:piece) (b:board) 
+(*let generate_moves (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
-  match pos with 
-    |Pos(x,y) -> 	   
+    match pos with 
+      | Pos(x,y) -> *)
 
-  let rec direction (x:int) (y:int) (lst:position list) (b:board)
+  let same_side pc1 pc2 =
+    match (pc1, pc2) with
+      | (Black _, Black _) | (White _, White _) -> true
+      | (Black _, White _) | (White _, Black _) -> false
+
+  let rec direction (pc:piece) (x:int) (y:int) (lst:position list) (b:board)
       (i: int) (j:int) (lim:int) = 
-    if lim < 0 | x+i < 0 | x+i > 7 | y+j < 0 | y+j > 7  then lst else(
-      match lookup (create_pos x+j y+k) b with
-	| None -> direction x+i y+j ((create_pos x+i y+j)::lst) b i j (lim-1)
-	| Some color -> if p = color then lst else (create_pos x+i y+j)::lst) in
+    if lim < 0 | x + i < 0 | x + i > 7 | y + j < 0 | y + j > 7  then lst
+    else
+      let new_pos = create_pos (x + i) (y + j) in
+        match lookup new_pos b with
+          | None ->
+              direction (x + i) (y + j) (new_pos::lst) b i j (lim - 1)
+          | Some pc2 ->
+              if same_side pc pc2 then lst else new_pos::lst
+  in
 
   let pawn_moves () = if p = Black then let j = -1 else let j = 1 in
       let m = lookup (create_pos x y+j) b in
