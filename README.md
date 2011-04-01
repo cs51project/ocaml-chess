@@ -20,7 +20,7 @@ We have divided the program into various orthogonal modules.  Thus one interface
 
 #### Board ####
 
-The board is built using a map from positions on the board to the pieces occupying those positions.  Positions are abstract, but internally represented by pairs of coordinates. Each piece is defined by a color and name. Standard moves are defined by starting and ending positions; castling moves are defined separately.  Other special moves, such as En Passant and Promotion, will be defined as standard moves, but will have special effects when played. We have functions to check for check and checkmate. These checks will be performed whenever a move is made.
+The board is built using a map from positions on the board to the pieces occupying those positions.  Positions are abstract, but internally represented by pairs of coordinates. Each piece is defined by a color and name. Standard moves are defined by starting and ending positions; castling moves are defined separately.  Other special moves, such as *En Passant* and Promotion, will be defined as standard moves, but will have special effects when played. We have functions to check for check and checkmate. These checks will be performed whenever a move is made.
 
 Here is the signature:
 
@@ -67,15 +67,16 @@ Here is the signature:
 
 #### Chess Engine ####
 
-The chess engine is based on a minimax algorithm. The engine searches through possible positions at a specified depth, looking for those positions which are most favorable.  In order to compare the values of positions, the engine uses an evaluator, which is an abstract data structure that can be applied to a board to produce a value. The standard evaluation function only adds up the values of the pieces of each color and subtracts the opposing sums. However, future evaluators will be able to learn better heuristics for evaluating boards by way of the train function. We will also improve the core engine by implementing Alpha-Beta pruning, which dramatically reduces the number of positions that the engine must consider in order to find the best move.
+The chess engine is based on a minimax algorithm. The engine searches through possible positions at a specified depth, looking for those positions which are most favorable.  In order to compare the values of positions, the engine uses an evaluator, which is an abstract data structure that can be applied to a board to produce a value. The standard evaluation function only adds up the values of the pieces of each color and subtracts the opposing sums. However, future evaluators will be able to learn better heuristics for evaluating boards by way of the `train` function. We will also improve the core engine by implementing Alpha-Beta pruning, which dramatically reduces the number of positions that the engine must consider in order to find the best move.
 
 Here are the signatures:
-
+An Order module, used for comparing evaluator values:
     module Order =
     struct
       type order = Less | Equal | Greater
     end
-    
+
+The evaluator interface:
     module type EVAL =
     sig
       type board
@@ -88,12 +89,14 @@ Here are the signatures:
       val init_eval : evaluator (* standard evaluator *)
       val train : evaluator -> evaluator (* learning function *)
     end
-    
+
+Parameter for the engine, specifying search depth:
     module type ENGPARAMS =
     sig
       val depth : int
     end
-    
+
+And the engine itself:
     module type ENGINE =
     sig
       type board
@@ -103,7 +106,7 @@ Here are the signatures:
 
 ### Algorithms ###
 
-We have implemented a basic minimax algorithm without alpha-beta pruning in our engine.ml file. This algorithm calculates all possible moves from a given board, then evaluates each one recursively by looking at the relative values of possible future board configurations that may arise if it is played.  Here is our implementation of minimax in two functors parametrized by a board implementation and an evaluator implementation, as well as a module of type ENGPARAMS that specifies the depth of search.
+We have implemented a basic minimax algorithm without alpha-beta pruning in our engine.ml file. This algorithm calculates all possible moves from a given board, then evaluates each one recursively by looking at the relative values of possible future board configurations that may arise if it is played.  Here is our implementation of minimax in two functors parametrized by a board implementation and an evaluator implementation, as well as a module of type `ENGPARAMS` that specifies the depth of search.
 
     module ABSEngine (B : BOARD) (L : EVAL with type board = B.board)
       (R : ENGPARAMS) :
