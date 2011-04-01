@@ -3,7 +3,7 @@ all: chess
 # These must be in the right order--no forward refs
 FILES = board.ml pieces.ml engine.ml
 
-moogle.exe: $(FILES)
+chess: $(FILES)
 	ocamlc -g -o chess unix.cma str.cma $(FILES)
 
 check: $(FILES)
