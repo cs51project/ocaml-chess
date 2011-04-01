@@ -1,6 +1,5 @@
 open Board
 
-
 module Order =
 struct
   type order = Less | Equal | Greater
