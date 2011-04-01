@@ -8,7 +8,7 @@ sig
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
   type board
-    (* add the not valid position exception *)
+  exception InvalidPosition
 
   (* build position from pair of integers
    * (i.e. create_pos rank file,
@@ -68,7 +68,7 @@ struct
   let create_pos rank file : position =
     if (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7) then
       Pos (x, y)
-    else raise Exception "Not a valid position"
+    else raise InvalidPosition
 
   let neighbor dx dy pos =
     let Pos(r0, f0) = pos in
