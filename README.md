@@ -2,10 +2,10 @@
 ## CS51 Project Functional Specification ##
 
 Identification: 
-    * Han He : hanhe333@gmail.com
-    * Robert Hero: robertmhero@gmail.com
-    * David Palmer: dpalmer93@gmail.com
-    * Amy Yin: amymichelleyin@gmail.com
+*    Han He : hanhe333@gmail.com
+*    Robert Hero: robertmhero@gmail.com
+*    David Palmer: dpalmer93@gmail.com
+*    Amy Yin: amymichelleyin@gmail.com
 
 ### Brief Overview
 
