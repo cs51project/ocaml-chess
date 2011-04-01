@@ -1,7 +1,5 @@
-#!ocaml
-
 # Learning Chess Engine #
-## CS51 Project Functional Specification ##
+## CS51 Project Readme ##
 
 Identification:
 
