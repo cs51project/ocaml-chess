@@ -11,9 +11,10 @@ sig
   exception InvalidPosition
 
   (* build position from pair of integers
-   * (i.e. create_pos rank file,
-   * where rank, file are between 0 and 7
-   * raise exception if invalid coordinates *)
+   * (i.e.,
+   *       create_pos rank file,
+   * where rank, file are between 0 and 7)
+   * raise InvalidPosition if invalid coordinates *)
   val create_pos : int -> int -> position
   (* functions for manipulating positions *)
   val neighbor : int -> int -> position -> position option
