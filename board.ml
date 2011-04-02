@@ -37,7 +37,8 @@ sig
   val check : board -> side option
   (* returns losing color or None *)
   val checkmate: board -> side option
-  val can_castle: board ->bool
+  (* determines whether current player can make castle move *)
+  val can_castle: board -> castle -> bool
 end
 
 
