@@ -1,7 +1,8 @@
 open Board
 
 (* Does not check if King is in 'check' when generating moves. Must 
- * do that before passing position to this function. *)
+ * do that before passing position to this function. Does not generate moves
+ * for passing a pawn to the other side.*)
 
 (*let generate_moves (pos: position) (pt:piece_type) (p:piece) (b:board) 
     (base:position list): position list = 
@@ -12,33 +13,38 @@ open Board
     match (pc1, pc2) with
       | (Black _, Black _) | (White _, White _) -> true
       | (Black _, White _) | (White _, Black _) -> false
-
-  let rec direction (pc:piece) (x:int) (y:int) (lst:position list) (b:board)
-      (i: int) (j:int) (lim:int) = 
-    if lim < 0 | x + i < 0 | x + i > 7 | y + j < 0 | y + j > 7  then lst
+  
+  (* returns list of positions in a given direction from a position *)
+  let rec direction (pc:piece) (pos:position) (lst:position list) (b:board)
+      (j: int) (i:int) (lim:int) : position list = 
+    if lim < 0 then lst
     else
-      let new_pos = create_pos (x + i) (y + j) in
+      let new_pos_opt = neighbor j i pos in
+      match new_pos_opt with
+	| None -> lst
+	| Some new_pos ->
         match lookup new_pos b with
           | None ->
-              direction (x + i) (y + j) (new_pos::lst) b i j (lim - 1)
-          | Some pc2 ->
+              direction new_pos (new_pos::lst) b j i (lim - 1)
+          | Some pc2 -> 
               if same_side pc pc2 then lst else new_pos::lst
-  in
+ 
 
-  let pawn_moves () = if p = Black then let j = -1 else let j = 1 in
-      let m = lookup (create_pos x y+j) b in
-      let r = lookup (create_pos x+1 y+j) b in 
-      let l = lookup (create_pos x-1 y+j) b in
+  let pawn_moves (pos:position) (pc:piece) (b:board) = 
+    if pc = Black then let j = -1 else let j = 1 in
+      let m = lookup (deopt_pos (neighbor j 0 pos) b in
+      let r = lookup (deopt_pos (neighbor j 1 pos)) b in 
+      let l = lookup (deopt_pos (neighbor j -1 pos) b in
       let mid = match m with 
 	|None -> (create_pos x y+j)::base
 	|Some _ -> base in
-      let right = match r with 
+      let frontright = match r with 
 	|None -> base
 	|Some color -> if p = color then base else (create_pos x+1 y+j) in
-      let left = match l with 
+      let frontleft = match l with 
 	|None -> base
 	|Some color -> if p = color then base else (create_pos x-1 y+j) in
-      left @ mid @ right in
+      frontleft @ mid @ frontright in
        
   let rook_moves lim = 
     (direction x y base b 1 0 lim) @ 
@@ -64,7 +70,7 @@ open Board
 
 
   match pt with
-    |Pawn   -> pawn_moves  
+    |Pawn   -> pawn_moves 
     |Rook   -> rook_moves 9
     |Knight -> knight_moves 
     |Bishop -> bishop_moves 9

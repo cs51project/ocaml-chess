@@ -37,8 +37,10 @@ sig
   val check : board -> side option
   (* returns losing color or None *)
   val checkmate: board -> side option
-  (* determines whether current player can make castle move *)
-  val can_castle: board -> castle -> bool
+  val can_castle: board ->bool
+
+  val same_side: piece -> piece -> bool
+  val deopt_pos: position option -> position
 end
 
 
@@ -73,7 +75,7 @@ struct
       Pos (x, y)
     else raise InvalidPosition
 
-  let neighbor dx dy pos =
+  let neighbor dr df pos : position option=
     let Pos(r0, f0) = pos in
     let (r1, f1) = (r0 + dr, f0 + df) in
     if (r1 >= 0 && r1 <= 7) && (f1 >= 0 && f1 <= 7) then
