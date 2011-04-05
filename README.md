@@ -78,6 +78,7 @@ Here is the signature:
 The chess engine is based on a minimax algorithm. The engine searches through possible positions at a specified depth, looking for those positions which are most favorable.  In order to compare the values of positions, the engine uses an evaluator, which is an abstract data structure that can be applied to a board to produce a value. The standard evaluation function only adds up the values of the pieces of each color and subtracts the opposing sums. However, future evaluators will be able to learn better heuristics for evaluating boards by way of the `train` function. We will also improve the core engine by implementing Alpha-Beta pruning, which dramatically reduces the number of positions that the engine must consider in order to find the best move.
 
 Here are the signatures:
+
 An Order module, used for comparing evaluator values:
     module Order =
     struct
