@@ -37,10 +37,8 @@ sig
   val check : board -> side option
   (* returns losing color or None *)
   val checkmate: board -> side option
-  val can_castle: board ->bool
-
+  val can_castle: board -> castle -> bool
   val same_side: piece -> piece -> bool
-  val deopt_pos: position option -> position
 end
 
 
