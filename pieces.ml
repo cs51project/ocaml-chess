@@ -36,15 +36,15 @@ open Board
       let r = lookup (deopt_pos (neighbor j 1 pos)) b in 
       let l = lookup (deopt_pos (neighbor j -1 pos) b in
       let mid = match m with 
-	|None -> (create_pos x y+j)::base
-	|Some _ -> base in
+	| None -> (create_pos x y+j)::base
+	| Some _ -> base in
       let frontright = match r with 
-	|None -> base
-	|Some color -> if p = color then base else (create_pos x+1 y+j) in
+	| None -> base
+	| Some color -> if p = color then base else (create_pos x+1 y+j) in
       let frontleft = match l with 
-	|None -> base
-	|Some color -> if p = color then base else (create_pos x-1 y+j) in
-      frontleft @ mid @ frontright in
+	| None -> base
+	| Some color -> if p = color then base else (create_pos x-1 y+j) in
+	    frontleft @ mid @ frontright in
        
   let rook_moves lim = 
     (direction x y base b 1 0 lim) @ 
