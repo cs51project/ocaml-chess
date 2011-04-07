@@ -10,16 +10,16 @@ function load_board(b)
         for(var file = 0; file < 8; file++)
         {
             var fileName = String.fromCharCode(65 + file);
-            var background = ((file % 2) ^ (rank % 2))? "white" : "black";
-            var color = (background === "black")? "white" : "black";
+            var background = ((file % 2) ^ (rank % 2))? "white" : "#05A";
+            var color = (background === "#05A")? "white" : "#05A";
             var id = fileName + (rank + 1);
             
             html += "<td class='file_" + fileName + "' id='" + id +
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            //html += id;
-            html += "<div class='piece'></div>";
+            html += id;
+            //html += "<div class='piece'></div>";
             
             html += "</td>";
         }
