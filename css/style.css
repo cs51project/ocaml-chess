@@ -21,7 +21,7 @@ div#board-container
     margin-right: auto;
     width: 640px;
     height: 640px;
-    border: 1px solid black;
+    border: 1px solid #05A;
 }
 
 table#board
