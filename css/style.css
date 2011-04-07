@@ -1,0 +1,60 @@
+*
+{
+    font-family: 'Helvetica Neue', Helvetica, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}
+
+h1#heading
+{
+    text-align: center;
+    font-variant: small-caps;
+    font-weight: 100;
+    font-size: 3em;
+}
+
+div#board-container
+{
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    width: 640px;
+    height: 640px;
+    border: 1px solid black;
+}
+
+table#board
+{
+    table-layout: fixed;
+    border-collapse: collapse;
+    width: 640px;
+    height: 640px;
+    text-align: center;
+    user-drag: none;
+    -webkit-user-drag: none;
+    -moz-user-drag: none;
+    padding: 0px;
+    font-weight: 100;
+}
+
+table#board td:hover
+{
+    box-shadow: inset 0 0 10px #0AF, inset 0 0 7px #0AF, inset 0 0 5px #0AF, inset 0 0 3px #FFF;
+    -webkit-box-shadow: inset 0 0 10px #0AF, inset 0 0 7px #0AF, inset 0 0 5px #0AF, inset 0 0 3px #FFF;
+    -moz-box-shadow: inset 0 0 10px #0AF, inset 0 0 7px #0AF, inset 0 0 5px #0AF, inset 0 0 3px #FFF;
+}
+
+div.piece
+{
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+    user-drag: element;
+    -webkit-user-drag: element;
+    -moz-user-drag: element;
+    background-image: url('../images/wqueen.png');
+    background-position: center;
+    height: 45px;
+    width: 45px;
+}
