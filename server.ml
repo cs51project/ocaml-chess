@@ -63,8 +63,7 @@ let strip_headers post =
 let local_path qs =
   let url_re = Str.regexp_string_case_fold server_url in
   let path = Str.global_replace url_re "/" qs in
-    Printf.printf "%s\n" server_url;
-    Printf.printf "%s\n" path;
+  let path = "index.html" in
     Filename.concat (Unix.getcwd()) path
 
 (* read in all the lines from a file and concatenate them into
