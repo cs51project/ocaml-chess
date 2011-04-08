@@ -18,8 +18,8 @@ function load_board(b)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += id;
-            //html += "<div class='piece'></div>";
+            //html += id;
+            html += "<div class='piece'></div>";
             
             html += "</td>";
         }
