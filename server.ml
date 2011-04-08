@@ -9,10 +9,10 @@ let debug = false
 
 (* Read the command line arguments and return the 
  * port number which OCamlChess should use for serving. *)
-let (server_url, server_port) = 
+let server_port = 
   let args = Sys.argv in 
     try 
-      int_of_string(Array.get args 1)
+      int_of_string (Array.get args 1)
     with _ -> 
       (Printf.printf 
          "usage: %s <port>\n" 
