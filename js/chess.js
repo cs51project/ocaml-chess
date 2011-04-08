@@ -90,7 +90,7 @@ function parseFEN(str)
             // if next char is a number, skip that number of squares
             var code = rem.charCodeAt(0);
             if(code >= 48 && code < 58)
-                return parseRank(rem.substr(1), file + 1 + (code - 48));
+                return parseRank(rem.substr(1), file + (code - 48));
                 
             var p = String.fromCharCode(code);
             var color = (p.toLowerCase() === p)? "b" : "w";
