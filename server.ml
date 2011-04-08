@@ -62,8 +62,7 @@ let strip_headers post =
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
   let url_re = Str.regexp_string_case_fold server_url in
-  let path = Str.global_replace url_re "/" qs in
-  let path = "index.html" in
+  let path = Str.replace_first url_re "/" qs in
     Filename.concat (Unix.getcwd()) path
 
 (* read in all the lines from a file and concatenate them into
