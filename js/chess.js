@@ -116,6 +116,7 @@ function parseFEN(str)
         
         parseRank(split2[i], 0);
     }
+    return board;
 }
 
 // Send a request to the server via AJAX
