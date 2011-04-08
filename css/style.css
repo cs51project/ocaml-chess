@@ -75,11 +75,11 @@ button.reset-button
     -webkit-transition: color 0.1s ease-in;
     -moz-transition: color 0.1s ease-in;
     box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -8px 25px rgba(64, 0, 64, 0.35);
+        inset 0 -17px 35px rgba(64, 0, 64, 0.35);
     -webkit-box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -8px 25px rgba(64, 0, 64, 0.35);
+        inset 0 -17px 35px rgba(64, 0, 64, 0.35);
     -moz-box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -8px 25px rgba(64, 0, 64, 0.35);
+        inset 0 -17px 35px rgba(64, 0, 64, 0.35);
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
