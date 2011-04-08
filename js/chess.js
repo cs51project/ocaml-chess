@@ -3,8 +3,10 @@ var xhr = null;
 // asynchronicity parameter
 var async = true;
 
-// Board object
-function Board(toMove)
+/* Comprehensive board object -- stores the state of a game
+ * on the client side.
+ */
+function Board(toMove, wKingside, wQueenside, bKingside, bQueenside, epTarget)
 {
     this.pieces = new Array();
     for(var i = 0; i < 8; i++)
@@ -13,6 +15,12 @@ function Board(toMove)
     }
     
     this.toMove = toMove;
+    this.wKingside = wKingside;
+    this.wQueenside = wQueenside;
+    this.bKingside = bKingside;
+    this.bQueenside = bQueenside;
+    this.epTarget = epTarget;
+    
     
     this.pieceAt = function(rank, file)
     {
@@ -22,6 +30,54 @@ function Board(toMove)
     this.insert = function(rank, file, piece)
     {
         this.pieces[rank][file] = piece;
+    }
+    
+    this.toFEN = function()
+    {
+        function letter(fullName)
+        {
+            var color = fullName.charAt(0);
+            fullName = fullName.substr(1);
+            var letter = (fullName === "knight")? "n" : (fullName.charAt(0));
+            return (color === "b")? letter : letter.toUpperCase();
+        }
+        
+        // encode the board configuration
+        var encoding = "";
+        for(var rank = 7; rank >= 0; rank--)
+        {
+            var gap = 0;
+            for(var file = 0; file < 8; file++)
+            {
+                var piece = pieceAt(rank, file);
+                if(piece)
+                {
+                    if(gap > 0)
+                        encoding += gap;
+                    encoding += letter(piece);
+                    gap = 0;
+                }
+                else gap++;
+            }
+            
+            if(rank > 0)
+                encoding += "/";
+        }
+        
+        // encode player to move
+        encoding += " " + toMove + " ";
+        
+        // encode availability of castle moves
+        var castleStatus = (wKingside? "K" : "") + (wQueenside? "Q" : "") +
+                           (bKingside? "k" : "") + (bQueenside? "q" : "");
+        if(castleStatus === "")
+            castleStatus = "-";
+        encoding += castleStatus + " ";
+        
+        // encode En Passant target
+        encoding += epTarget;
+        
+        return encoding;
     }
 }
 
@@ -175,6 +231,11 @@ function sendAJAX(params, callback)
     return;
 }
 
+function urlEncode(str)
+{
+    return str.replace(/[ \n\t]+/g, "+");
+}
+
 function handleBoard(response)
 {
     var boardFEN = response;
@@ -185,7 +246,7 @@ function handleBoard(response)
 /* Submit a move to the server via AJAX.
  * Returns false if invalid else a new board.
  */
-function submitMove(move)
+function submitMove(board, move)
 {
     function moveCallback(response)
     {
@@ -198,15 +259,15 @@ function submitMove(move)
         }
     }
     
-    sendAJAX("request=makemove&value=" + move, moveCallback);
-    return;
+    return sendAJAX("request=submit_move&board=" + urlEncode(board.toFEN()) +
+                    "&move=" + urlEncode(move), moveCallback);
 }
 
 /* Request the board from the server.
  * If the server is to move, causes the
  * server to make its move.
  */
-function requestBoard()
+function requestMove(board)
 {
-    sendAJAX("request=board", handleBoard);
+    return sendAJAX("request=get_move&board=" + urlEncode(board.toFEN()), handleBoard);
 }
