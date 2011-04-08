@@ -23,6 +23,7 @@ function Board(toMove)
     }
 }
 
+// display a board
 function loadBoard(b)
 {
     var boardView = document.getElementById("board");
@@ -117,6 +118,11 @@ function parseFEN(str)
         parseRank(split2[i], 0);
     }
     return board;
+}
+
+function initBoard()
+{
+    loadBoard(parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w"));
 }
 
 // Send a request to the server via AJAX
