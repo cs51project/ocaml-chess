@@ -8,8 +8,7 @@
 let debug = false
 
 (* Read the command line arguments and return the 
- * port number which Moogle should use for serving, 
- * the number of pages to index, and the root url. *)
+ * port number which OCamlChess should use for serving. *)
 let server_port = 
   let args = Sys.argv in 
     try 
