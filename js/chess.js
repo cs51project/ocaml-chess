@@ -1,5 +1,7 @@
 // AJAX request object
 var xhr = null;
+// asynchronicity parameter
+var async = true;
 
 // Board object
 function Board(toMove)
@@ -177,7 +179,7 @@ function sendAJAX(params, callback)
 
 function handleBoard(response)
 {
-    var boardFEN = xhr.response;
+    var boardFEN = response;
     var board = parseFEN(boardFEN);
     loadBoard(board);
 }

@@ -31,12 +31,6 @@ let fail_header =
   "Server: OCamlChess/1.0\n" ^
   "Connection: close\n\n"
 
-let http_get_re = 
-  Str.regexp_case_fold "GET[ \t]+/\\([^ \t]*\\)[ \t]+HTTP/1\\.[0-9]"
-
-let http_post_re =
-  Str.regexp_case_fold "POST[ \t]+/index\\.html[ \t]+HTTP/1\\.[0-9]"
-
 (* A post request will have a bunch of headers
  * on it separated from the actual data by two newlines (or two
  * carriage-returns/line-feeds.)  This finds those two spaces and
@@ -126,6 +120,12 @@ let send_all fd buf =
   let size = String.length buf in 
   let _ = more 0 size in size
 
+let http_get_re = 
+  Str.regexp_case_fold "GET[ \t]+/\\([^ \t]*\\)[ \t]+HTTP/1\\.[0-9]"
+
+let http_post_re =
+  Str.regexp_case_fold "POST[ \t]+/index\\.html[ \t]+HTTP/1\\.[0-9]"
+
 let process_request client_fd request =
   let is_safe s = 
     (* At least check that the passed in path doesn't contain .. *)
@@ -152,8 +152,9 @@ let process_request client_fd request =
         send_all client_fd response
     else if Str.string_match http_post_re request 0 then
       let data_urlencoded = strip_headers request in
-        send_std_response client_fd
-    else send_std_response client_fd
+        send_all client_fd (String.sub data_urlencoded 0 4)
+    else send_all client_fd fail_header
+;;
 
 (* The server loop, adapted from moogle. *)
 let server () = 
