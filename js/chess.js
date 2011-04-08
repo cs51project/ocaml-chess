@@ -169,8 +169,6 @@ function sendAJAX(params, callback)
     
     // set HTTP headers (adapted from http://www.openjs.com/articles/ajax_xmlhttp_using_post.php)
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.setRequestHeader("Content-length", params.length);
-    xhr.setRequestHeader("Connection", "close");
     
     // send form via POST
     xhr.send(params);
