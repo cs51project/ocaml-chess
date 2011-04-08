@@ -16,28 +16,40 @@ sig
    * where rank, file are between 0 and 7)
    * raise InvalidPosition if invalid coordinates *)
   val create_pos : int -> int -> position
+
   (* functions for manipulating positions *)
   val neighbor : int -> int -> position -> position option
   val vector : position -> position -> (int * int)
+
   (* standard starting board *)
   val init_board : board
+
   (* which color is to play *)
   val to_play : board -> side
+
   (* all pieces on current board *)
   val all_pieces : board -> (position, piece) list
+
   (* is move valid? *)
   val is_valid : board -> move -> bool
+
   (* all valid moves *)
   val all_moves : board -> move list
+
   (* what piece is at given position *)
   val lookup : position -> board -> piece option
+
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
+
   (* returns color in check or None *)
   val check : board -> side option
+
   (* returns losing color or None *)
   val checkmate: board -> side option
-  val can_castle: board -> castle -> bool
+
+  (* REQUIRES SIDE AND RIGHT OR LEFT *)
+  val can_castle: board -> side -> castle -> bool
   val same_side: piece -> piece -> bool
 end
 
