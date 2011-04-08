@@ -4,7 +4,7 @@ all: chess
 FILES = board.ml pieces.ml engine.ml server.ml
 
 chess: $(FILES)
-	ocamlc -g -o chess unix.cma str.cma $(FILES)
+	ocamlopt -o chess unix.cmxa str.cmxa $(FILES)
 
 server: server.ml
 	ocamlc -g -o server unix.cma str.cma server.ml
