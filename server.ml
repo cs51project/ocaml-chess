@@ -152,7 +152,7 @@ let process_request client_fd request =
         send_all client_fd response
     else if Str.string_match http_post_re request 0 then
       let data_urlencoded = strip_headers request in
-        send_all client_fd (String.sub data_urlencoded 0 4)
+        send_all client_fd data_urlencoded
     else send_all client_fd fail_header
 ;;
 
