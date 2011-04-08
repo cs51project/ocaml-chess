@@ -50,6 +50,7 @@ sig
 
   (* REQUIRES SIDE AND RIGHT OR LEFT *)
   val can_castle: board -> side -> castle -> bool
+  
   val same_side: piece -> piece -> bool
 end
 
