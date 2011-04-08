@@ -48,8 +48,7 @@ struct
     let pc_side pc =
       match pc with
         | Black _ -> -1
-        | White _ -> 1
-    in
+        | White _ -> 1 in
     let pc_val pc =
       (match pc with
          | Black Pawn | White Pawn -> 1
@@ -57,7 +56,7 @@ struct
          | Black Bishop | White Bishop -> 3
          | Black Rook | White Rook -> 5
          | Black Queen | White Queen -> 9
-         | Black King | White King -> 0
+         | Black King | White King -> 1000
       ) * pc_side pc * pc_side (B.to_play bd)
     in
       List.fold_left (fun r elt -> let (_, pc) = elt in r + pc_val pc) 0 pcs
