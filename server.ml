@@ -12,10 +12,10 @@ let debug = false
 let (server_url, server_port) = 
   let args = Sys.argv in 
     try 
-      (Array.get args 1, int_of_string(Array.get args 2))
+      int_of_string(Array.get args 1)
     with _ -> 
       (Printf.printf 
-         "usage: %s <root-url> <port>\n" 
+         "usage: %s <port>\n" 
          (Array.get args 0) ;
        exit 1)
 
@@ -61,10 +61,7 @@ let strip_headers post =
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
-  let url_re = Str.regexp_string_case_fold server_url in
-  let path = Str.replace_first url_re "/" qs in
-    Printf.printf "%s\n" path;
-    Filename.concat (Unix.getcwd()) "index.html" (*path*)
+  Filename.concat (Unix.getcwd()) qs
 
 (* read in all the lines from a file and concatenate them into
  * a big string. *)
@@ -149,7 +146,7 @@ let process_request client_fd request =
                 | Unix.S_DIR ->
                     read_file (Filename.concat path "index.html")
                 | _ -> fail_header
-            with _ -> fail_header
+            with _ -> std_response
         else fail_header
       in
         send_all client_fd response
