@@ -9,13 +9,13 @@ let debug = false
 
 (* Read the command line arguments and return the 
  * port number which OCamlChess should use for serving. *)
-let server_port = 
+let (server_url, server_port) = 
   let args = Sys.argv in 
     try 
-      int_of_string(Array.get args 1)
+      (Array.get args 1, int_of_string(Array.get args 2))
     with _ -> 
       (Printf.printf 
-         "usage: %s <port> <num-pages> <root-url>\n" 
+         "usage: %s <root-url> <port>\n" 
          (Array.get args 0) ;
        exit 1)
 
@@ -60,8 +60,10 @@ let strip_headers post =
       | Some i -> String.sub post i (String.length post - i)
 
 (* Given a requested path, return the corresponding local path *)
-let local_path qs = 
-  Filename.concat (Unix.getcwd ()) qs
+let local_path qs =
+  let url_re = Str.regexp_string_case_fold server_url in
+  let path = Str.global_replace url_re "" qs in
+    Filename.concat (Unix.getcwd()) path
 
 (* read in all the lines from a file and concatenate them into
  * a big string. *)
