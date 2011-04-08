@@ -12,7 +12,29 @@
             <table id="board"></table>
             <script type="text/javascript">
             // <![CDATA[
-                load_board(null);
+                var test_board = new Board("w");
+                for(var i = 0; i < 8; i++)
+                {
+                    test_board.insert(1, i, "wpawn");
+                    test_board.insert(6, i, "bpawn");
+                }
+                test_board.insert(0, 0, "wrook");
+                test_board.insert(7, 0, "brook");
+                test_board.insert(0, 1, "wknight");
+                test_board.insert(7, 1, "bknight");
+                test_board.insert(0, 2, "wbishop");
+                test_board.insert(7, 2, "bbishop");
+                test_board.insert(0, 3, "wqueen");
+                test_board.insert(7, 3, "bqueen");
+                test_board.insert(0, 4, "wking");
+                test_board.insert(7, 4, "bking");
+                test_board.insert(0, 5, "wbishop");
+                test_board.insert(7, 5, "bbishop");
+                test_board.insert(0, 6, "wknight");
+                test_board.insert(7, 6, "bknight");
+                test_board.insert(0, 7, "wrook");
+                test_board.insert(7, 7, "brook");
+                loadBoard(test_board);
             // ]]>
             </script>
         </div>

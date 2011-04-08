@@ -53,8 +53,6 @@ div.piece
     user-drag: element;
     -webkit-user-drag: element;
     -moz-user-drag: element;
-    background-image: url('../images/bpawn.png');
-    background-position: center;
     height: 45px;
     width: 45px;
 }
