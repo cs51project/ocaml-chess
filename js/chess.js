@@ -124,11 +124,11 @@ function Board(strFEN)
         }
         
         // encode player to move
-        encoding += " " + toMove + " ";
+        encoding += " " + this.toMove + " ";
         
         // encode availability of castle moves
-        var castleStatus = (wKingside? "K" : "") + (wQueenside? "Q" : "") +
-                           (bKingside? "k" : "") + (bQueenside? "q" : "");
+        var castleStatus = (this.wKingside? "K" : "") + (this.wQueenside? "Q" : "") +
+                           (this.bKingside? "k" : "") + (this.bQueenside? "q" : "");
         if(castleStatus === "")
             castleStatus = "-";
         encoding += castleStatus + " ";
