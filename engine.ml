@@ -63,9 +63,9 @@ struct
   let train eval = eval
 end
 
-(* an engine using alpha-beta search based on an evaluator *)
-module ABSEngine (B : BOARD) (L : EVAL with type board = B.board)
-  (R : ENGPARAMS) :
+(* an engine using minimax search based on an evaluator *)
+module MinimaxEngine (B : BOARD)
+  (L : EVAL with type board = B.board) (R : ENGPARAMS) :
   (ENGINE with type board = B.board and type move = B.move) =
 struct
   type board = B.board
