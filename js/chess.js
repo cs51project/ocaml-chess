@@ -127,14 +127,16 @@ function Board(strFEN)
         encoding += " " + this.toMove + " ";
         
         // encode availability of castle moves
-        var castleStatus = (this.wKingside? "K" : "") + (this.wQueenside? "Q" : "") +
-                           (this.bKingside? "k" : "") + (this.bQueenside? "q" : "");
+        var castleStatus = (this.wKingside? "K" : "") +
+                           (this.wQueenside? "Q" : "") +
+                           (this.bKingside? "k" : "") +
+                           (this.bQueenside? "q" : "");
         if(castleStatus === "")
             castleStatus = "-";
         encoding += castleStatus + " ";
         
         // encode En Passant target
-        encoding += epTarget;
+        encoding += this.epTarget;
         
         return encoding;
     }
