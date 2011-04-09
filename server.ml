@@ -53,6 +53,29 @@ let strip_headers post =
       | None -> post
       | Some i -> String.sub post i (String.length post - i)
 
+(* A post request is encoded in URL form.  This function extracts
+ * the key-value pairs.
+ *)
+let url_decode request =
+  let bindings = Str.split (Str.regexp_string "&") request in
+  let binding_to_pair str =
+    let binding_re = Str.regexp_case_fold "^\\([^ \t]+\\)=\\([^ \t]+\\)$" in
+      if Str.string_match binding_re str 0 then
+        let k = Str.matched_group 1 str in
+        let v = Str.matched_group 2 str in
+        let decode_re = Str.regexp_string "+" in
+        let decoded_k = Str.global_replace decode_re " " k in
+        let decoded_v = Str.global_replace decode_re " " v in
+          Some(decoded_k, decoded_v)
+      else None
+  in
+    List.fold_left
+      (fun r str ->
+        match binding_to_pair str with
+          | None -> r
+          | Some x -> x :: r
+      ) [] bindings
+
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
   Filename.concat (Unix.getcwd()) qs
