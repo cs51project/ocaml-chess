@@ -4,32 +4,88 @@ var xhr = null;
 var async = true;
 
 /* Comprehensive board object -- stores the state of a game
- * on the client side.
+ * on the client side.  We can build a board from a string in
+ * Forsyth-Edwards Notation.
+ * (See http://en.wikipedia.org/wiki/Forsyth–Edwards_Notation.)
  */
-function Board(toMove, wKingside, wQueenside, bKingside, bQueenside, epTarget)
+function Board(strFEN)
 {
+    // first split FEN string into segments
+    var sgt = strFEN.split(" ");
+    
+    // parse the piece positions
     this.pieces = new Array();
-    for(var i = 0; i < 8; i++)
+    
+    var ranks = sgt[0].split("/");
+    for(var i in ranks)
     {
-        this.pieces[i] = new Array();
+        var rank = 7 - i;
+        
+        // helper function for parsing one rank of FEN
+        function parseRank(str, file, buffer)
+        {
+            // if we have reached the end of the rank, return
+            if(str === "" || file >= 8)
+                return buffer;
+            
+            // if next char is a number, skip that number of squares
+            var code = str.charCodeAt(0);
+            if(code >= 48 && code < 58)
+                return parseRank(str.substr(1), file + (code - 48), buffer);
+                
+            var p = String.fromCharCode(code);
+            var color = (p.toLowerCase() === p)? "b" : "w";
+            
+            function fullName(letter)
+            {
+                switch(letter)
+                {
+                    case "p": return "pawn";
+                    case "n": return "knight";
+                    case "b": return "bishop";
+                    case "r": return "rook";
+                    case "q": return "queen";
+                    case "k": return "king";
+                }
+            }
+            
+            var piece = color + fullName(p.toLowerCase());
+            buffer[file] = piece;
+            
+            return parseRank(str.substr(1), file + 1, buffer);
+        }
+        
+        this.pieces[rank] = parseRank(ranks[i], 0, new Array());
     }
     
-    this.toMove = toMove;
-    this.wKingside = wKingside;
-    this.wQueenside = wQueenside;
-    this.bKingside = bKingside;
-    this.bQueenside = bQueenside;
-    this.epTarget = epTarget;
+    // parse other data:
     
+    // which player is to move
+    this.toMove = sgt[1];
+    
+    // which castles have been precluded
+    var castling = sgt[2];
+    this.wKingside = false;
+    this.wQueenside = false;
+    this.bKingside = false;
+    this.bQueenside = false;
+    for(var i in castling)
+    {
+        switch(castling[i])
+        {
+            case 'K': this.wKingside = true; break;
+            case 'Q': this.wQueenside = true; break;
+            case 'k': this.bKingside = true; break;
+            case 'q': this.bQueenside = true; break;
+        }
+    }
+    
+    // current En Passant target
+    this.epTarget = sgt[3];
     
     this.pieceAt = function(rank, file)
     {
         return this.pieces[rank][file];
-    }
-    
-    this.insert = function(rank, file, piece)
-    {
-        this.pieces[rank][file] = piece;
     }
     
     this.toFEN = function()
@@ -49,7 +105,7 @@ function Board(toMove, wKingside, wQueenside, bKingside, bQueenside, epTarget)
             var gap = 0;
             for(var file = 0; file < 8; file++)
             {
-                var piece = pieceAt(rank, file);
+                var piece = this.pieceAt(rank, file);
                 if(piece)
                 {
                     if(gap > 0)
@@ -59,6 +115,9 @@ function Board(toMove, wKingside, wQueenside, bKingside, bQueenside, epTarget)
                 }
                 else gap++;
             }
+            
+            if(gap > 0)
+                encoding += gap;
             
             if(rank > 0)
                 encoding += "/";
@@ -124,63 +183,9 @@ function loadBoard(b)
     boardView.innerHTML = html;
 }
 
-/* Parse a board encoded in Forsyth-Edwards notation
- * into a Board object.  See
- * http://en.wikipedia.org/wiki/Forsyth–Edwards_Notation
- */
-function parseFEN(str)
-{
-    // first figure out which player is to move
-    var split1 = str.split(" ");
-    var toMove = split1[1];
-    var board = new Board(toMove);
-    
-    // then parse the piece positions
-    var split2 = split1[0].split("/");
-    for(var i in split2)
-    {
-        var rank = 7 - i;
-        function parseRank(rem, file)
-        {
-            // if we have reached the end of the rank, return
-            if(rem === "" || file >= 8)
-                return;
-            
-            // if next char is a number, skip that number of squares
-            var code = rem.charCodeAt(0);
-            if(code >= 48 && code < 58)
-                return parseRank(rem.substr(1), file + (code - 48));
-                
-            var p = String.fromCharCode(code);
-            var color = (p.toLowerCase() === p)? "b" : "w";
-            
-            function fullName(letter)
-            {
-                switch(letter)
-                {
-                    case "p": return "pawn";
-                    case "n": return "knight";
-                    case "b": return "bishop";
-                    case "r": return "rook";
-                    case "q": return "queen";
-                    case "k": return "king";
-                }
-            }
-            
-            var piece = color + fullName(p.toLowerCase());
-            board.insert(rank, file, piece);
-            
-            return parseRank(rem.substr(1), file + 1);
-        }
-        
-        parseRank(split2[i], 0);
-    }
-    return board;
-}
-
 function initBoard()
 {
-    loadBoard(parseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w"));
+    loadBoard(new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"));
 }
 
 // Send a request to the server via AJAX
@@ -236,10 +241,9 @@ function urlEncode(str)
     return str.replace(/[ \n\t]+/g, "+");
 }
 
-function handleBoard(response)
+function handleBoard(responseFEN)
 {
-    var boardFEN = response;
-    var board = parseFEN(boardFEN);
+    var board = new Board(responseFEN);
     loadBoard(board);
 }
 
