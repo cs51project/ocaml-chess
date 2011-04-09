@@ -1,3 +1,5 @@
+open Util
+
 module type BOARD = 
 sig
   type position

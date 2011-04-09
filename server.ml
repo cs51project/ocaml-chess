@@ -1,3 +1,5 @@
+open Util
+
 (* Web server for user interface:
  * GUI is displayed via HTML and CSS on a browser, and AJAX
  * is used to transmit user moves to the chess engine.
@@ -69,12 +71,7 @@ let url_decode request =
           Some(decoded_k, decoded_v)
       else None
   in
-    List.fold_left
-      (fun r str ->
-        match binding_to_pair str with
-          | None -> r
-          | Some x -> x :: r
-      ) [] bindings
+    deoptionalize (List.map binding_to_pair bindings)
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =

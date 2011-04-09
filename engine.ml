@@ -1,3 +1,4 @@
+open Util
 open Board
 
 module Order =
@@ -10,9 +11,8 @@ sig
   type board
   type value
   type evaluator
-  val min_value : value (* minimum possible value *)
   val comp : value -> value -> Order.order
-  val max : value -> value -> value
+  val negate : value -> value
   val apply : evaluator -> board -> value
   val init_eval : evaluator (* standard evaluator *)
   val train : evaluator -> evaluator (* learning function *)
@@ -27,7 +27,8 @@ module type ENGINE =
 sig
   type board
   type move
-  val strat : board -> move option
+  type evaluator
+  val strat : board -> evaluator -> move option
 end
 
 module StdEval (B : BOARD) =
@@ -35,13 +36,12 @@ struct
   type board = B.board
   type value = int
   type evaluator = board -> value
-  let min_value = -1000000
   let comp a b =
     let cmp = compare a b in
     if cmp > 0 then Greater
     else if cmp = 0 then Equal
     else Less
-  let max = max
+  let negate = ( * ) -1
   let apply eval bd = eval bd
   let init_eval bd =
     let pcs = B.all_pieces bd in
@@ -71,30 +71,39 @@ struct
   type board = B.board
   type move = B.move
 
-  let move_eval bd mv eval =
-    let rec move_eval_r n bd =
-      if n = 0 then L.apply eval bd
-      else
-        let moves = B.all_moves bd in
-          match moves with
-            | [] -> L.apply eval bd
-            | _ -> 
-                let boards = List.map (B.play bd) moves in
-                let values = List.map (move_eval_r (n - 1)) boards in
-                  List.fold_left L.max L.min_value values
+  let score eval strat1 strat2 bd =
+    let rec signed_score bd strat1 strat2 color n =
+      let sign =
+        match (color, B.to_play bd) with
+          | (Black _, Black _) | (White _, White _) -> (fun x -> x)
+          | (Black _, White _) | (White _, Black _) -> L.negate
+      in
+        if n = 0 then sign (L.apply eval bd)
+        else
+          match strat1 bd with
+            | None -> sign (L.apply eval bd)
+            | Some mv ->
+                match B.play bd mv with
+                  | None -> sign (L.apply eval bd)
+                  | Some bd2 -> signed_score bd2 strat2 strat1 color (n - 1)
     in
-      move_eval_r R.depth (B.play bd mv)
-
-  let strat bd eval =
-    let moves = B.all_moves bd in
-    let better_move mv1 mv2 =
-      match comp (move_eval bd mv1 eval) (move_eval bd mv2 eval) with
-        | Greater -> mv1
-        | Equal | Less -> mv2
+      signed_score bd strat1 strat2 (B.to_play bd) R.depth
+  
+  let rec best_against strat eval bd =
+    let score = score eval strat (best_against strat eval) in
+    let choose_move mv1 mv2 =
+      match (B.play bd mv1, B.play bd mv2) with
+        | (None, None) -> None
+        | (Some _, None) -> mv1
+        | (None, Some _) -> mv2
+        | (Some bd1, Some bd2) ->
+            match L.compare (score bd1) (score bd2) with
+              | Order.Less | Order.Equal -> mv1
+              | Order.Greater -> mv2
     in
-      match moves with
+      match B.all_moves bd with
         | [] -> None
-        | hd::tl ->
-            Some (List.fold_left better_move hd moves)
+        | hd :: tl -> List.fold_left choose_move hd tl
+  
+  let strat eval = best_against strat eval
 end
-
