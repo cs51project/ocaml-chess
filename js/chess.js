@@ -10,13 +10,11 @@ var async = true;
  */
 function Board(strFEN)
 {
-    var self = this;
-    
     // first split FEN string into segments
     var sgt = strFEN.split(" ");
     
     // parse the piece positions
-    self.pieces = new Array();
+    this.pieces = new Array();
     
     var ranks = sgt[0].split("/");
     for(var i in ranks)
@@ -57,40 +55,40 @@ function Board(strFEN)
             return parseRank(str.substr(1), file + 1, buffer);
         }
         
-        self.pieces[rank] = parseRank(ranks[i], 0, new Array());
+        this.pieces[rank] = parseRank(ranks[i], 0, new Array());
     }
     
     // parse other data:
     
     // which player is to move
-    self.toMove = sgt[1];
+    this.toMove = sgt[1];
     
     // which castles have been precluded
     var castling = sgt[2];
-    self.wKingside = false;
-    self.wQueenside = false;
-    self.bKingside = false;
-    self.bQueenside = false;
+    this.wKingside = false;
+    this.wQueenside = false;
+    this.bKingside = false;
+    this.bQueenside = false;
     for(var i in castling)
     {
         switch(castling[i])
         {
-            case 'K': self.wKingside = true; break;
-            case 'Q': self.wQueenside = true; break;
-            case 'k': self.bKingside = true; break;
-            case 'q': self.bQueenside = true; break;
+            case 'K': this.wKingside = true; break;
+            case 'Q': this.wQueenside = true; break;
+            case 'k': this.bKingside = true; break;
+            case 'q': this.bQueenside = true; break;
         }
     }
     
     // current En Passant target
-    self.epTarget = sgt[3];
+    this.epTarget = sgt[3];
     
-    self.pieceAt = function(rank, file)
+    this.pieceAt = function(rank, file)
     {
-        return self.pieces[rank][file];
+        return this.pieces[rank][file];
     }
     
-    self.toFEN = function()
+    this.toFEN = function()
     {
         function letter(fullName)
         {
@@ -107,7 +105,7 @@ function Board(strFEN)
             var gap = 0;
             for(var file = 0; file < 8; file++)
             {
-                var piece = self.pieceAt(rank, file);
+                var piece = this.pieceAt(rank, file);
                 if(piece)
                 {
                     if(gap > 0)
@@ -126,19 +124,19 @@ function Board(strFEN)
         }
         
         // encode player to move
-        encoding += " " + self.toMove + " ";
+        encoding += " " + this.toMove + " ";
         
         // encode availability of castle moves
-        var castleStatus = (self.wKingside? "K" : "") +
-                           (self.wQueenside? "Q" : "") +
-                           (self.bKingside? "k" : "") +
-                           (self.bQueenside? "q" : "");
+        var castleStatus = (this.wKingside? "K" : "") +
+                           (this.wQueenside? "Q" : "") +
+                           (this.bKingside? "k" : "") +
+                           (this.bQueenside? "q" : "");
         if(castleStatus === "")
             castleStatus = "-";
         encoding += castleStatus + " ";
         
         // encode En Passant target
-        encoding += self.epTarget;
+        encoding += this.epTarget;
         
         return encoding;
     }
