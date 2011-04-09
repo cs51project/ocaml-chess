@@ -81,7 +81,7 @@ struct
             | _ -> 
                 let boards = List.map (B.play bd) moves in
                 let values = List.map (move_eval_r (n - 1)) boards in
-                  List.fold_left L.max min_value values
+                  List.fold_left L.max L.min_value values
     in
       move_eval_r R.depth (B.play bd mv)
 
@@ -89,7 +89,7 @@ struct
     let moves = B.all_moves bd in
     let better_move mv1 mv2 =
       match comp (move_eval bd mv1 eval) (move_eval bd mv2 eval) with
-	| Greater -> mv1
+        | Greater -> mv1
         | Equal | Less -> mv2
     in
       match moves with
