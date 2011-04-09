@@ -74,7 +74,12 @@ function Board(strFEN)
     for(var i in castling)
     {
         switch(castling[i])
-        self
+        {
+            case 'K': self.wKingside = true; break;
+            case 'Q': self.wQueenside = true; break;
+            case 'k': self.bKingside = true; break;
+            case 'q': self.bQueenside = true; break;
+        }
     }
     
     // current En Passant target
