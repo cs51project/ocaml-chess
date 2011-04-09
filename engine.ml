@@ -66,10 +66,13 @@ end
 (* an engine using minimax search based on an evaluator *)
 module MinimaxEngine (B : BOARD)
   (L : EVAL with type board = B.board) (R : ENGPARAMS) :
-  (ENGINE with type board = B.board and type move = B.move) =
+  (ENGINE with type board = B.board
+    and type move = B.move
+    and type evaluator = L.evaluator) =
 struct
   type board = B.board
   type move = B.move
+  type evaluator = L.evaluator
 
   let score eval strat1 strat2 bd =
     let rec signed_score bd strat1 strat2 color n =
