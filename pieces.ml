@@ -14,7 +14,7 @@ open Board
       | (Black _, Black _) | (White _, White _) -> true
       | (Black _, White _) | (White _, Black _) -> false
   
-  (* returns list of positions in a given direction from a position *)
+  (* returns list of positions that are possible moves in a given direction *)
   let rec direction (pc:piece) (pos:position) (lst:position list) (b:board)
       (j: int) (i:int) (lim:int) : position list = 
     if lim < 0 then lst
@@ -22,7 +22,7 @@ open Board
       match (neighbor j i pos) with
 	| None -> lst
 	| Some new_pos ->
-                 match lookup (Some new_pos) b with
+                 match lookup new_pos b with
 		   | None ->
 		     direction pc new_pos (new_pos::lst) b j i (lim - 1)
 		   | Some pc2 -> 
@@ -31,20 +31,28 @@ open Board
 
   let pawn_moves (pc:piece) (pos:position) (b:board) = 
     if pc = Black then let j = -1 else let j = 1 in
-      let m = lookup (neighbor j 0 pos) b in
-      let r = lookup (neighbor j 1 pos) b in 
-      let l = lookup (neighbor j -1 pos) b in
       match pos with
 	|Pos(x,y) ->
-	  let mid = match m with 
-	    | None -> (create_pos x y+j)
-	    | Some _ -> [] in
-	  let frontright = match r with 
-	    | None -> []
-	    | Some color -> if p = color then base else (create_pos x+1 y+j) in
-	  let frontleft = match l with 
-	    | None -> []
-	    | Some color -> if p = color then base else (create_pos x-1 y+j) in
+	  let mid = 
+	    match neighbor j 0 pos with 
+	      | None -> []
+	      | Some m -> match lookup m b with
+		          | None -> (create_pos x y+j)
+		          | Some _ -> [] in
+	  let frontright = 
+	    match neighbor j 1 pos with
+	      | None -> []
+	      | Some r -> match r with 
+		          | None -> []
+	                  | Some color -> if p = color then base 
+			                else (create_pos x+1 y+j) in
+	  let frontleft = 
+	    match neighbor j -1 pos with
+	      | None -> []
+	      | Some l -> match l with 
+		          | None -> []
+			  | Some color -> if p = color then base
+			                  else (create_pos x-1 y+j) in
 	  frontleft @ mid @ frontright 
        
   let rook_moves (pc:piece) (pos:position) (b:board) (lim:int) = 
@@ -79,6 +87,5 @@ open Board
     |Knight -> knight_moves pc pos b
     |Bishop -> bishop_moves pc pos b 9
     |Queen  -> queen_moves pc pos b 9
-    |King   -> queen_moves pc pos b 1 in
-  generate_moves pos pt p b 
+    |King   -> queen_moves pc pos b 1 
 
