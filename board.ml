@@ -147,13 +147,13 @@ struct
     else 
     
 
-  let is_valid b mv =
-    match mv with
+  let is_valid b move =
+    match move with
       | Standard (pos1, pos2) ->
           let pc = piece_at b pos1 in
 	    match pc with
-	      | White pc -> is_valid_for pc b mv 1
-	      | Black pc -> is_valid_for pc b mv -1
+	      | White pc -> is_valid_for pc b move 1
+	      | Black pc -> is_valid_for pc b move -1
       | Castle Queenside White _ -> 
       | Castle Queenside Black _ ->
       | Castle Kingside White _ ->
@@ -163,9 +163,9 @@ struct
     
     
 
-  let play b mv =
-    let exec map mv =
-      match mv with
+  let play b move =
+    let exec map move =
+      match move with
         | Standard (p1, p2) ->
             let pc = piece_at b p1 in
             let new_map = PositionMap.remove p1
@@ -184,8 +184,8 @@ struct
             exec (exec map (Standard (create_pos 7 7, create_pos 7 5)))
               (Standard (create_pos 7 4, create_pos 7 6))
     in
-      if is_valid b mv then 
+      if is_valid b move then 
         let (map, cfg) = b in
-          flip (exec map mv, cfg)
+          flip (exec map move, cfg)
       else b
 end
