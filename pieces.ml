@@ -44,14 +44,14 @@ open Board
 	      | None -> []
 	      | Some r -> match r with 
 		          | None -> []
-	                  | Some color -> if p = color then base 
+	                  | Some color -> if p = color then [] 
 			                else (create_pos x+1 y+j) in
 	  let frontleft = 
 	    match neighbor j -1 pos with
 	      | None -> []
 	      | Some l -> match l with 
 		          | None -> []
-			  | Some color -> if p = color then base
+			  | Some color -> if p = color then []
 			                  else (create_pos x-1 y+j) in
 	  frontleft @ mid @ frontright 
        
