@@ -79,7 +79,7 @@ struct
     end)
 
   (* a board is a map of positions to pieces together with extra data *)
-  type board_config = {toPlay : side;}
+  type board_config = {toPlay : side; epTarget: position option}
   type board = (piece PositionMap.t) * board_config 
   
   let create_pos rank file : position =
