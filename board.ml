@@ -153,6 +153,8 @@ struct
 	  else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
 	  (* En-passant *)
 	   else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
+
+
     
 
   let is_valid b move =
