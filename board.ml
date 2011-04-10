@@ -159,7 +159,8 @@ struct
       | Castle Kingside White _ ->
       | Castle Kingside Black _ ->
   
-  let lookup pos_opt b =
+  let lookup pos b = let (board,_) = b in 
+      try Some(M.find pos b) with Not_found -> None
     
     
 
