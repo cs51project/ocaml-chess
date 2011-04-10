@@ -1,0 +1,1 @@
+let deoptionalize = List.filter (fun x -> x != None)
