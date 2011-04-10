@@ -131,14 +131,14 @@ struct
       PartitionMap.bindings map
 
   (* helper functions for is_valid *)
-  let is_valid_for pc board= 
+  let is_valid_for pc = 
     match pc with 
-      | Pawn -> is_valid_pawn board
-      | Knight -> is_valid_knight board
-      | Bishop -> is_valid_bishop board
-      | Rook -> is_valid_rook board
-      | Queen -> is_valid_queen board
-      | King -> is_valid_queen board
+      | Pawn -> is_valid_pawn
+      | Knight -> is_valid_knight
+      | Bishop -> is_valid_bishop
+      | Rook -> is_valid_rook
+      | Queen -> is_valid_queen 
+      | King -> is_valid_queen
 
   let is_valid_pawn b move dir =
     let (pos1, pos2) = move in
