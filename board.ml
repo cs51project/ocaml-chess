@@ -140,8 +140,8 @@ struct
       | Queen -> is_valid_queen board
       | King -> is_valid_queen board
 
-  let is_valid_pawn b mv dir =
-    let (pos1, pos2) = mv in
+  let is_valid_pawn b move dir =
+    let (pos1, pos2) = move in
     let (dr, df) = vector pos1 pos2 in
     if dr != dir then false
     else 
