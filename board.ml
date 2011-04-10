@@ -79,7 +79,7 @@ struct
     end)
 
   (* a board is a map of positions to pieces together with extra data *)
-  type board_config = {toPlay : side;}
+  type board_config = {toPlay : side; epTarget: position option}
   type board = (piece PositionMap.t) * board_config 
   
   let create_pos rank file : position =
@@ -162,7 +162,9 @@ struct
   let lookup pos b = let (board,_) = b in 
       try Some(M.find pos b) with Not_found -> None
     
-    
+  let lookupbool pos board = match lookup pos board with
+    | Some(_) -> true
+    | None -> false  
 
   let play b move =
     let exec map move =
