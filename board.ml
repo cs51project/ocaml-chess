@@ -161,7 +161,9 @@ struct
   
   let lookup pos_opt b =
     
-    
+  let lookupbool pos board = match lookup pos board with
+    | Some(_) -> true
+    | None -> false  
 
   let play b move =
     let exec map move =
