@@ -39,7 +39,7 @@ sig
   val all_moves : board -> move list
 
   (* what piece is at given position *)
-  val lookup : position option -> board -> piece option
+  val lookup : position -> board -> piece option
 
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
@@ -88,7 +88,7 @@ struct
       Pos (x, y)
     else raise InvalidPosition
 
-  let neighbor dr df pos : position option=
+  let neighbor dr df pos : position option =
     let Pos(r0, f0) = pos in
     let (r1, f1) = (r0 + dr, f0 + df) in
     if (r1 >= 0 && r1 <= 7) && (f1 >= 0 && f1 <= 7) then
