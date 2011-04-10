@@ -21,7 +21,6 @@ sig
 
   (* functions for manipulating positions *)
   val neighbor : int -> int -> position -> position option
-  val vector : position -> position -> (int * int)
 
   (* standard starting board *)
   val init_board : board
