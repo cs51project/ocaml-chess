@@ -39,7 +39,7 @@ sig
   val all_moves : board -> move list
 
   (* what piece is at given position *)
-  val lookup : position -> board -> piece option
+  val lookup : position option -> board -> piece option
 
   (* should return None if the move is invalid *)
   val play : board -> move -> board option
@@ -159,6 +159,9 @@ struct
       | Castle Queenside Black _ ->
       | Castle Kingside White _ ->
       | Castle Kingside Black _ ->
+  
+  let lookup pos_opt b =
+    
     
 
   let play b mv =
