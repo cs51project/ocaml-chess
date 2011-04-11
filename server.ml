@@ -1,5 +1,5 @@
 open Util
-open Board
+(*open Board*)
 
 (* Web server for user interface:
  * GUI is displayed via HTML and CSS on a browser, and AJAX
@@ -56,12 +56,15 @@ let strip_headers post =
       | None -> post
       | Some i -> String.sub post i (String.length post - i)
 
+module RequestMap = Map.Make(String)
+type post_map = string RequestMap.t
+
 (* A post request is encoded in URL form.  This function extracts
  * the key-value pairs.
  *)
 let url_decode request =
   let bindings = Str.split (Str.regexp_string "&") request in
-  let binding_to_pair str =
+  let add_binding map str =
     let binding_re = Str.regexp_case_fold "^\\([^ \t]+\\)=\\([^ \t]+\\)$" in
       if Str.string_match binding_re str 0 then
         let k = Str.matched_group 1 str in
@@ -69,10 +72,10 @@ let url_decode request =
         let decode_re = Str.regexp_string "+" in
         let decoded_k = Str.global_replace decode_re " " k in
         let decoded_v = Str.global_replace decode_re " " v in
-          Some(decoded_k, decoded_v)
-      else None
+          RequestMap.add decoded_k decoded_v map
+      else map
   in
-    deoptionalize (List.map binding_to_pair bindings)
+    List.fold_left add_binding RequestMap.empty bindings
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
@@ -174,7 +177,12 @@ let process_request client_fd request =
         send_all client_fd response
     else if Str.string_match http_post_re request 0 then
       let data_urlencoded = strip_headers request in
-        send_all client_fd data_urlencoded
+      let map = url_decode data_urlencoded in
+      try
+        let board = RequestMap.find "board" map in
+        let header = response_header "text/plain; charset=utf-8" in
+          send_all client_fd (header ^ board)
+      with _ -> send_all client_fd fail_header
     else send_all client_fd fail_header
 ;;
 

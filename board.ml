@@ -62,7 +62,7 @@ struct
   module PositionMap = Map.Make(struct
       type t = position
       let compare pos1 pos2 =
-        let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2)  in
+        let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2) in
           if r1 < r2 then -1
           else if r1 > r2 then 1
           else if r1 = r2 then
@@ -262,8 +262,7 @@ struct
     let (r1, f1) = (r0 + dr, f0 + df) in
     if (r1 >= 0 && r1 <= 7) && (f1 >= 0 && f1 <= 7) then
       Some Pos (r1, f1)
-    else
-      None
+    else None
 
   let vector pos1 pos2 =
     let (Pos(rank1, file1), Pos(rank2, file2)) = (pos1, pos2) in
@@ -272,7 +271,8 @@ struct
   (* Returns bool indicating whether given castle is currently
    * allowed by color to play.
    *)
-  let can_castle =
+  let can_castle ctl =
+    match ctl with 
 
   (* helper functions for is_valid *)
 
