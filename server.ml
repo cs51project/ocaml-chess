@@ -120,7 +120,7 @@ let read_file file =
     else if ext = "css" then text_response "text/css; charset=utf-8"
     else if ext = "js" then text_response "text/javascript; charset=utf-8"
     else if ext = "txt" then text_response "text/plain; charset=utf-8"
-    else if ext = "svg" then text_response "image/svg+html"
+    else if ext = "svg" then text_response "image/svg+xml"
     else if ext = "png" then bin_response "image/png"
     else if ext = "ico" then bin_response "image/vnd.microsoft.icon"
     else bin_response "application/octet_stream"
