@@ -173,7 +173,7 @@ function loadBoard(b)
                 html += "<div class='piece." + piece +
                         "' style=\"background-position: center;" +
                         "background-image: url('images/" + piece +
-                        ".png'); height: 45px; width: 45px;\"></div>";
+                        ".svg'); height: 45px; width: 45px;\"></div>";
             }
             
             html += "</div></td>";
