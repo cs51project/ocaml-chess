@@ -9,7 +9,7 @@ open Board
     match pos with 
       | Pos(x,y) -> *)
 
-  let same_side (pc1:piece) (pc2:piece) =
+  let same_color (pc1:piece) (pc2:piece) =
     match (pc1, pc2) with
       | (Black _, Black _) | (White _, White _) -> true
       | (Black _, White _) | (White _, Black _) -> false
@@ -26,7 +26,7 @@ open Board
 		   | None ->
 		     direction pc new_pos (new_pos::lst) b j i (lim - 1)
 		   | Some pc2 -> 
-		     if same_side pc pc2 then lst else new_pos::lst
+		     if same_color pc pc2 then lst else new_pos::lst
 		
 
   let pawn_moves (pc:piece) (pos:position) (b:board) = 

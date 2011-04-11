@@ -164,7 +164,7 @@ function loadBoard(b)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += "<div class='piece' draggable=true>";
+            html += "<div class='piece-container' draggable=true>";
             
             // insert the proper piece into each square
             if(b != null && b.pieceAt(rank, file) != null)

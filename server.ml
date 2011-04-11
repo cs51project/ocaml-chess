@@ -1,4 +1,5 @@
 open Util
+open Board
 
 (* Web server for user interface:
  * GUI is displayed via HTML and CSS on a browser, and AJAX
@@ -36,7 +37,7 @@ let fail_header =
 (* A post request will have a bunch of headers
  * on it separated from the actual data by two newlines (or two
  * carriage-returns/line-feeds.)  This finds those two spaces and
- * strips off all the headers. *)
+ * strips off all the headers. (Copied from moogle.) *)
 let strip_headers post = 
   let rec find_two_newlines i = 
     if i+2 < String.length post then

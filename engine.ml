@@ -45,7 +45,7 @@ struct
   let apply eval bd = eval bd
   let init_eval bd =
     let pcs = B.all_pieces bd in
-    let pc_side pc =
+    let pc_dir pc =
       match pc with
         | Black _ -> -1
         | White _ -> 1 in
@@ -57,7 +57,7 @@ struct
          | Black Rook | White Rook -> 5
          | Black Queen | White Queen -> 9
          | Black King | White King -> 1000
-      ) * pc_side pc * pc_side (B.to_play bd)
+      ) * pc_dir pc * pc_dir (B.to_play bd)
     in
       List.fold_left (fun r elt -> let (_, pc) = elt in r + pc_val pc) 0 pcs
   let train eval = eval
