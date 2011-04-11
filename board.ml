@@ -140,11 +140,21 @@ struct
       | Queen -> is_valid_queen 
       | King -> is_valid_queen
 
+  (* Look if this causes king to be in check!!!!!!! *)
   let is_valid_pawn b move dir =
     let (pos1, pos2) = move in
     let (dr, df) = vector pos1 pos2 in
-    if dr != dir then false
-    else 
+    let Pos(rank, file) = pos1 in 
+	  (* Move up one square *)
+      if dr*dir = 1 && df = 0 && lookupbool pos2 board then true
+	  (* Move up two squares *)	
+      else if dr*dir = 2 && df = 0 && lookupbool pos2 board && lookupbool Pos(rank+1, file) board then true
+	  (* Take left or right *)
+	  else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
+	  (* En-passant *)
+	   else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
+
+
     
 
   let is_valid b move =
