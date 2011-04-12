@@ -1,5 +1,5 @@
-open Util
-(*open Board*)
+open Board
+open Engine
 
 (* Web server for user interface:
  * GUI is displayed via HTML and CSS on a browser, and AJAX
@@ -38,14 +38,14 @@ let fail_header =
  * on it separated from the actual data by two newlines (or two
  * carriage-returns/line-feeds.)  This finds those two spaces and
  * strips off all the headers. (Copied from moogle.) *)
-let strip_headers post = 
+let strip_headers request = 
   let rec find_two_newlines i = 
-    if i+2 < String.length post then
-      match String.sub post i 2 with 
+    if i+2 < String.length request then
+      match String.sub request i 2 with 
         | "\n\n" -> Some (i+2)
         | "\r\n" -> 
-            if i+4 < String.length post then 
-              (match String.sub post (i+2) 2 with 
+            if i+4 < String.length request then 
+              (match String.sub request (i+2) 2 with 
                  | "\r\n" -> Some (i+4)
                  | _ -> find_two_newlines (i+1))
             else None
@@ -53,8 +53,8 @@ let strip_headers post =
     else None
   in 
     match find_two_newlines 0 with 
-      | None -> post
-      | Some i -> String.sub post i (String.length post - i)
+      | None -> request
+      | Some i -> String.sub request i (String.length request - i)
 
 module RequestMap = Map.Make(String)
 type post_map = string RequestMap.t
@@ -76,6 +76,22 @@ let url_decode request =
       else map
   in
     List.fold_left add_binding RequestMap.empty bindings
+
+let request_move board_fen =
+  let board = StdBoard.fen_decode board_fen in
+   board_fen
+
+let submit_move board_fen move_str =
+  let board = StdBoard.fen_decode board_fen in
+  let move_re = Str.regexp_case_fold "^\\([a-h][1-8]\\)\\([a-h][1-8]\\)$" in
+  if Str.string_match move_re move_str 0 then
+    let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
+    let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
+    let move = Standard(pos1, pos2) in
+      match StdBoard.play board move with
+        | None -> "false"
+        | Some new_board -> StdBoard.fen_encode new_board
+  else "false"
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
@@ -178,11 +194,19 @@ let process_request client_fd request =
     else if Str.string_match http_post_re request 0 then
       let data_urlencoded = strip_headers request in
       let map = url_decode data_urlencoded in
-      try
-        let board = RequestMap.find "board" map in
+      let response =
+        try
+          let query = RequestMap.find "q" map in
+          let board = RequestMap.find "board" map in
+            if query = "submit_move" then
+              let move = RequestMap.find "move" map in
+                submit_move board move
+            else if query = "request_move" then
+              request_move board
+        with _ -> fail_header
+      in
         let header = response_header "text/plain; charset=utf-8" in
-          send_all client_fd (header ^ board)
-      with _ -> send_all client_fd fail_header
+        send_all client_fd (header ^ response)
     else send_all client_fd fail_header
 ;;
 

@@ -265,7 +265,7 @@ function submitMove(board, move)
         }
     }
     
-    return sendAJAX("request=submit_move&board=" + urlEncode(board.toFEN()) +
+    return sendAJAX("q=submit_move&board=" + urlEncode(board.toFEN()) +
                     "&move=" + urlEncode(move), moveCallback);
 }
 
@@ -275,5 +275,5 @@ function submitMove(board, move)
  */
 function requestMove(board)
 {
-    return sendAJAX("request=get_move&board=" + urlEncode(board.toFEN()), handleBoard);
+    return sendAJAX("q=request_move&board=" + urlEncode(board.toFEN()), handleBoard);
 }

@@ -1,5 +1,3 @@
-open Util
-
 module type BOARD = 
 sig
   type position
@@ -33,7 +31,7 @@ sig
   val to_play : board -> color
 
   (* all pieces on current board *)
-  val all_pieces : board -> (position, piece) list
+  val all_pieces : board -> (position * piece) list
 
   (* all valid moves *)
   val all_moves : board -> move list
@@ -58,17 +56,16 @@ struct
   type color = piece
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
+  exception InvalidPosition
 
   module PositionMap = Map.Make(struct
       type t = position
-      let compare pos1 pos2 =
-        let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2) in
-          if r1 < r2 then -1
-          else if r1 > r2 then 1
-          else if r1 = r2 then
-            if f2 < f2 then -1
-            else if f1 > f2 then 1
-            else 0
+      let compare (Pos(r1, f1)) (Pos(r2, f2)) =
+        if r1 < r2 then -1
+        else if r1 > r2 then 1
+        else if r1 = r2 && f1 < f2 then -1
+        else if r1 = r2 && f1 > f2 then 1
+        else 0
     end)
 
   (* a board is a map of positions to pieces together with extra data *)
@@ -77,9 +74,11 @@ struct
                        ep_target : position option;}
   type board = (piece PositionMap.t) * board_config 
   
-  let create_pos rank file : position =
-    if (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7) then
-      Pos (x, y)
+  let in_bounds rank file =
+    (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7)
+  
+  let create_pos rank file =
+    if in_bounds rank file then Pos (rank, file)
     else raise InvalidPosition
 
   let init_board = 
@@ -103,7 +102,7 @@ struct
   let lookup pos bd =
     let (map, _) = bd in 
       try
-        Some (PositionMap.find pos bd)
+        Some (PositionMap.find pos map)
       with Not_found -> None
     
   let occupied pos board =
@@ -118,7 +117,7 @@ struct
       else if c = 'b' then Bishop
       else if c = 'r' then Rook
       else if c = 'q' then Queen
-      else if c = 'k' then King
+      else King
     in
       if Char.uppercase c = c then White name
       else Black name
@@ -131,7 +130,7 @@ struct
         let ascii = Char.code c in
         let len = String.length str in
         let tail = String.sub str 1 (len - 1) in
-          if c = "/" then
+          if c = '/' then
             fen_to_map_r tail map (rank - 1) 0
           else if ascii >= 48 && ascii < 58 then
             let gap = ascii - 48 in
@@ -154,10 +153,10 @@ struct
     let bQ = String.contains str 'q' in
       {wK = wK; wQ = wQ; bK = bK; bQ = bQ}
 
-  let fen_to_target str =
+  let fen_to_pos str =
     let f = String.get str 0 in
     let r = String.get str 1 in
-    let file = (Char.code (lowercase f)) - 97 in
+    let file = (Char.code (Char.lowercase f)) - 97 in
     let rank = (Char.code r) - 49 in
       create_pos rank file
   
@@ -174,8 +173,11 @@ struct
         let map = fen_to_map fen_pcs in
         let to_play = fen_to_color fen_color in
         let cas = fen_to_castle fen_castle in
-        let ep_target = fen_to_target fen_ep in
-          Some (map, {to_play = to_play; cas = cas; ep_target = ep_target;))
+        let ep_target =
+          try Some (fen_to_pos fen_ep)
+          with InvalidPosition -> None
+        in
+          Some (map, {to_play = to_play; cas = cas; ep_target = ep_target})
       else None
 
 
@@ -194,13 +196,12 @@ struct
     in case letter
 
   let map_to_fen bd =
-    let map_to_fen_r str rank file gap =
-      let gap_str = if gap > 0 then int_to_string gap else "" in
+    let rec map_to_fen_r str rank file gap =
+      let gap_str = if gap > 0 then string_of_int gap else "" in
         if file >= 8 && rank <= 0 then
           str ^ gap_str
         else if file >= 8 && rank > 0 then
-          let gap = int_to_string gap in
-            map_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
+          map_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
         else
           let pos = create_pos rank file in
             match lookup pos bd with
@@ -210,13 +211,12 @@ struct
                   let c = piece_to_char pc in
                   let c_str = Char.escaped c in
                     str ^ gap_str ^ c_str
-              
-    
+    in map_to_fen_r "" 7 0 0
   
   let color_to_fen player =
     match player with
       | White _ -> "w"
-      | Black -> "b"
+      | Black _ -> "b"
   
   let castle_to_fen cas =
     let {wK; wQ; bK; bQ} = cas in
@@ -229,10 +229,13 @@ struct
   
   
   let target_to_fen pos =
-    let Pos(rank, file) = pos in
-    let r = Char.chr (rank + 49) in
-    let f = Char.chr (file + 97) in
-      (Char.escaped f) ^ (Char.escaped r)
+    match pos with
+      | None -> "-"
+      | Some pos ->
+          let Pos(rank, file) = pos in
+          let r = Char.chr (rank + 49) in
+          let f = Char.chr (file + 97) in
+            (Char.escaped f) ^ (Char.escaped r)
   
   let fen_encode bd =
     let (_, cfg) = bd in
@@ -243,8 +246,8 @@ struct
       map_fen ^ " " ^ color_fen ^ " " ^ castle_fen ^ " " ^ ep_fen
 
   (* helper function for exchanging turns *)
-  let flip (b: board) =
-    let (map, cfg) = b in
+  let flip bd =
+    let (map, cfg) = bd in
     let {to_play; cas; ep_target} = cfg in
       match to_play with
         | White x -> (map, {to_play = Black x; cas; ep_target})
@@ -255,41 +258,130 @@ struct
 
   let all_pieces bd =
     let (map, cfg) = bd in
-      PartitionMap.bindings map
+      PositionMap.bindings map
 
-  let neighbor dr df pos : position option =
+  (* NEED TO IMPLEMENT THESE!!!! *)
+  let generate_moves bd = []
+  let all_moves bd = []
+
+  (************ helper functions for is_valid ************)
+  
+  let same_color dir pc2 =
+    match (dir = 1, pc2) with
+      | (true, White _) | (false, Black _) -> true
+      | (true, Black _) | (false, White _) -> false
+
+  let neighbor dr df pos =
     let Pos(r0, f0) = pos in
     let (r1, f1) = (r0 + dr, f0 + df) in
-    if (r1 >= 0 && r1 <= 7) && (f1 >= 0 && f1 <= 7) then
-      Some Pos (r1, f1)
-    else None
+      if in_bounds r1 f1 then Some (Pos(r1, f1)) else None
 
   let vector pos1 pos2 =
-    let (Pos(rank1, file1), Pos(rank2, file2)) = (pos1, pos2) in
-      (rank2 - rank1, file2 - file1)
+    let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2) in
+      (r2 - r1, f2 - f1)
+
+  (* returns whether pos is in check by current player *)
+  let in_check pos bd =
+    let under_attack prev move =
+      let (_, pos2) = move in
+        pos2 = pos || prev
+    in
+      List.fold_left under_attack false (generate_moves bd)
+
+  let rec clear_path occup bd pos1 pos2 =
+    let (dr, df) = vector pos1 pos2 in
+      match neighbor dr df pos1 with
+        | None -> false
+        | Some nb ->
+            nb = pos2 || (not (occup nb bd) && clear_path occup bd nb pos2)
+
+  let rec unobstructed = clear_path occupied
+  let rec clear_of_check = clear_path in_check
 
   (* Returns bool indicating whether given castle is currently
    * allowed by color to play.
    *)
-  let can_castle ctl =
-    match ctl with 
+  let can_castle ctl bd =
+    let (_, cfg) = bd in
+    let cas = cfg.cas in
+    let to_play = cfg.to_play in
+    let flipped = flip bd in
+      match (to_play, ctl) with
+        | (White _, Kingside) ->
+            cas.wK && clear_of_check flipped
+              (create_pos 0 4) (create_pos 0 6) &&
+            unobstructed bd (create_pos 0 4) (create_pos 0 7)
+        | (White _, Queenside) ->
+            cas.wQ && clear_of_check flipped
+              (create_pos 0 4) (create_pos 0 2) &&
+            unobstructed bd (create_pos 0 0) (create_pos 0 4)
+        | (Black _, Kingside) ->
+            cas.bK && clear_of_check flipped
+              (create_pos 7 4) (create_pos 7 6) &&
+            unobstructed bd (create_pos 7 4) (create_pos 7 7)
+        | (Black _, Queenside) ->
+            cas.bQ && clear_of_check flipped
+              (create_pos 7 4) (create_pos 7 2) &&
+            unobstructed bd (create_pos 7 0) (create_pos 7 4)
 
-  (* helper functions for is_valid *)
-
-  (* Look if this causes king to be in check!!!!!!! *)
+  (* Does this leave king in check? *)
   let is_valid_pawn bd move dir =
+    let (_, {ep_target}) = bd in
     let (pos1, pos2) = move in
     let (dr, df) = vector pos1 pos2 in
-    let Pos(rank, file) = pos1 in 
-	  (* Move up one square *)
-      if dr*dir = 1 && df = 0 && occupied pos2 board then true
-	  (* Move up two squares *)	
-      else if dr*dir = 2 && df = 0 && occupied pos2 board
-        && occupied Pos(rank+1, file) bd then true
-	  (* Take left or right *)
-	  else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
-	  (* En-passant *)
-	   else if dr*dir = 1 && df = 1 || df = -1 && (* figure out if there's a piece to take of the opposite color *)
+    let target = lookup pos2 bd in
+      if dr * dir = 1 then
+        match target with
+          | None -> df = 0 || (abs df = 1 && ep_target = Some pos2)
+          | Some pc -> abs df = 1 && not (same_color dir pc)
+      else match neighbor dir 0 pos1 with
+        | None -> false
+        | Some nb ->
+            let Pos(rank, _) = pos1 in
+              dr * dir = 2 && df = 0 &&
+              target = None && not (occupied nb bd) && 
+              (if dir = 1 then rank = 1 else rank = 6)
+
+  let is_valid_knight bd move dir =
+    let (pos1, pos2) = move in
+    let (dr, df) = vector pos1 pos2 in
+    let (dR, dF) = (abs dr, abs df) in
+    let pattern = (dR, dF) = (1, 2) || (dR, dF) = (2, 1) in
+      match lookup pos2 bd with
+        | None -> pattern
+        | Some pc -> pattern && not (same_color dir pc)
+
+  let is_valid_bishop bd move dir =
+    let (pos1, pos2) = move in
+    let (dr, df) = vector pos1 pos2 in
+    let (dR, dF) = (abs dr, abs df) in
+    let pattern = (dR, dF) = (1, 1) && unobstructed bd pos1 pos2 in
+      match lookup pos2 bd with
+        | None -> pattern
+        | Some pc -> pattern && not (same_color dir pc)
+
+  let is_valid_rook bd move dir =
+    let (pos1, pos2) = move in
+    let (dr, df) = vector pos1 pos2 in
+    let (dR, dF) = (abs dr, abs df) in
+    let pattern =
+      (dR, dF) = (1, 0) || (dR, dF) = (0, 1) &&
+      unobstructed bd pos1 pos2
+    in
+      match lookup pos2 bd with
+        | None -> pattern
+        | Some pc -> pattern && not (same_color dir pc)
+        
+  let is_valid_queen bd move dir =
+    is_valid_rook bd move dir ||
+    is_valid_bishop bd move dir
+
+  let is_valid_king bd move dir =
+    let (pos1, pos2) = move in
+    let (dr, df) = vector pos1 pos2 in
+    let (dR, dF) = (abs dr, abs df) in
+    let dist = max dR dF in
+      dist = 1 && is_valid_queen bd move dir
 
   let is_valid_for pc = 
     match pc with 
@@ -303,37 +395,55 @@ struct
   let is_valid bd move =
     match move with
       | Standard (pos1, pos2) ->
-          let pc = piece_at bd pos1 in
-	    match pc with
-	      | White pc -> is_valid_for pc bd move 1
-	      | Black pc -> is_valid_for pc bd move -1
-      | Castle Kingside -> 
-      | Castle Queenside ->
+	      (match lookup pos1 bd with
+	         | None -> false
+	         | Some (White pc) -> is_valid_for pc bd (pos1, pos2) 1
+             | Some (Black pc) -> is_valid_for pc bd (pos1, pos2) (-1)
+          )
+      | Castle ctl -> can_castle ctl bd
 
   let play bd move =
-    let exec map move =
+    let rec exec map move =
       match (move, to_play bd) with
-        | (Standard (p1, p2), _) ->
-            let pc = piece_at bd p1 in
-            let new_map = PositionMap.remove p1 (PositionMap.add p2 pc map) in
-              new_map
+        | (Standard (pos1, pos2), _) ->
+            (match lookup pos1 bd with
+               | None -> None
+               | Some pc ->
+                   let tmp = PositionMap.add pos2 pc map in
+                     Some (PositionMap.remove pos1 tmp)
+            )
         | (Castle Queenside, White _) ->
-            exec (exec map (Standard (create_pos 0 0, create_pos 0 3)))
-              (Standard (create_pos 0 4, create_pos 0 2))
+            (match exec map (Standard(create_pos 0 0, create_pos 0 3)) with
+               | None -> None
+               | Some new_map ->
+                   exec new_map (Standard(create_pos 0 4, create_pos 0 2))
+            )
         | (Castle Queenside, Black _) ->
-            exec (exec map (Standard (create_pos 7 0, create_pos 7 3)))
-              (Standard (create_pos 7 4, create_pos 7 2))
+            (match exec map (Standard(create_pos 7 0, create_pos 7 3)) with
+               | None -> None
+               | Some new_map ->
+                   exec new_map (Standard(create_pos 7 4, create_pos 7 2))
+            )
         | (Castle Kingside, White _) ->
-            exec (exec map (Standard (create_pos 0 7, create_pos 0 5)))
-              (Standard (create_pos 0 4, create_pos 0 6))
+            (match exec map (Standard(create_pos 0 7, create_pos 0 5)) with
+               | None -> None
+               | Some new_map ->
+                   exec new_map (Standard(create_pos 0 4, create_pos 0 6))
+            )
         | (Castle Kingside, Black _) ->
-            exec (exec map (Standard (create_pos 7 7, create_pos 7 5)))
-              (Standard (create_pos 7 4, create_pos 7 6))
+            (match exec map (Standard(create_pos 7 7, create_pos 7 5)) with
+               | None -> None
+               | Some new_map ->
+                   exec new_map (Standard(create_pos 7 4, create_pos 7 6))
+            )
     in
-      if is_valid bd move then 
+      if is_valid bd move then
         let (map, cfg) = bd in
-          flip (exec map move, cfg)
-      else bd
+          match exec map move with
+            | None -> None
+            | Some new_map -> 
+                Some (flip (new_map, cfg))
+      else None
 end
 
 module StdBoard : BOARD = MapBoard

@@ -1,4 +1,3 @@
-open Util
 open Board
 
 module Order =
@@ -31,7 +30,7 @@ sig
   val strat : board -> evaluator -> move option
 end
 
-module StdEval (B : BOARD) =
+module SimpleEval (B : BOARD) =
 struct
   type board = B.board
   type value = int
@@ -110,3 +109,12 @@ struct
   
   let strat eval = best_against strat eval
 end
+
+(* Standard synonyms so we can easily change implementation *)
+module StdParams : ENGPARAMS =
+struct
+  let depth = 5
+end
+module StdEval : EVAL= SimpleEval (StdBoard)
+module StdEngine : ENGINE =
+  MinimaxEngine (StdBoard) (StdEval) (StdParams)
