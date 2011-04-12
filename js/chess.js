@@ -3,10 +3,13 @@ var xhr = null;
 // asynchronicity parameter
 var async = true;
 
+// current board
+var board = null;
+
 /* Comprehensive board object -- stores the state of a game
  * on the client side.  We can build a board from a string in
  * Forsyth-Edwards Notation.
- * (See http://en.wikipedia.org/wiki/Forsyth–Edwards_Notation.)
+ * (See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation.)
  */
 function Board(strFEN)
 {
@@ -142,9 +145,11 @@ function Board(strFEN)
     }
 }
 
-// display a board
-function loadBoard(b)
+// load and display a board
+function loadBoard(bd)
 {
+    board = bd;
+    
     var boardView = document.getElementById("board");
     
     var html = "";
@@ -167,9 +172,9 @@ function loadBoard(b)
             html += "<div class='piece-container' draggable=true>";
             
             // insert the proper piece into each square
-            if(b != null && b.pieceAt(rank, file) != null)
+            if(bd != null && bd.pieceAt(rank, file) != null)
             {
-                var piece = b.pieceAt(rank, file);
+                var piece = bd.pieceAt(rank, file);
                 html += "<div class='piece." + piece +
                         "' style=\"background-position: center;" +
                         "background-image: url('images/" + piece +
@@ -245,14 +250,13 @@ function urlEncode(str)
 
 function handleBoard(responseFEN)
 {
-    var board = new Board(responseFEN);
-    loadBoard(board);
+    loadBoard(new Board(responseFEN));
 }
 
 /* Submit a move to the server via AJAX.
  * Returns false if invalid else a new board.
  */
-function submitMove(board, move)
+function submitMove(bd, move)
 {
     function moveCallback(response)
     {
@@ -265,7 +269,7 @@ function submitMove(board, move)
         }
     }
     
-    return sendAJAX("q=submit_move&board=" + urlEncode(board.toFEN()) +
+    return sendAJAX("q=submit_move&board=" + urlEncode(bd.toFEN()) +
                     "&move=" + urlEncode(move), moveCallback);
 }
 
@@ -273,7 +277,7 @@ function submitMove(board, move)
  * If the server is to move, causes the
  * server to make its move.
  */
-function requestMove(board)
+function requestMove(bd)
 {
-    return sendAJAX("q=request_move&board=" + urlEncode(board.toFEN()), handleBoard);
+    return sendAJAX("q=request_move&board=" + urlEncode(bd.toFEN()), handleBoard);
 }
