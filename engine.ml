@@ -115,6 +115,6 @@ module StdParams : ENGPARAMS =
 struct
   let depth = 5
 end
-module StdEval : EVAL= SimpleEval (StdBoard)
+module StdEval : EVAL = SimpleEval (StdBoard)
 module StdEngine : ENGINE =
   MinimaxEngine (StdBoard) (StdEval) (StdParams)
