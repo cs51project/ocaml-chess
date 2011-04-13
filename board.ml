@@ -39,11 +39,11 @@ sig
   (* returns None if the move is invalid *)
   val play : board -> move -> board option
 
-  (* returns color in check or None *)
-  val check : board -> color option
+  (* returns whether current color in check *)
+  val check : board -> bool
 
-  (* returns losing color or None *)
-  val checkmate : board -> color option
+  (* returns whether current player has lost *)
+  val checkmate : board -> bool
 end
 
 
@@ -71,8 +71,8 @@ struct
   (* a board is a map of positions to pieces together with extra data *)
   type castle_rec = {wK : bool; wQ : bool; bK : bool; bQ : bool}
   type board_config = {to_play : color; cas: castle_rec;
-                       ep_target : position option;}
-  type board = (piece PositionMap.t) * board_config 
+                       ep_target : position option}
+  type board = (piece PositionMap.t) * board_config
   
   let in_bounds rank file =
     (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7)
@@ -260,16 +260,14 @@ struct
     let (map, cfg) = bd in
       PositionMap.bindings map
 
-  (* NEED TO IMPLEMENT THESE!!!! *)
-  let generate_moves bd = []
-  let all_moves bd = []
+  let same_color pc1 pc2 =
+    match (pc1, pc2) with
+      | (White _, White _) | (Black _, Black _) -> true
+      | (White _, Black _) | (Black _, White _) -> false
 
-  (************ helper functions for is_valid ************)
-  
-  let same_color dir pc2 =
-    match (dir = 1, pc2) with
-      | (true, White _) | (false, Black _) -> true
-      | (true, Black _) | (false, White _) -> false
+  let same_color_dir dir pc2 =
+    if dir = 1 then same_color (White King) pc2
+    else same_color (Black King) pc2
 
   let neighbor dr df pos =
     let Pos(r0, f0) = pos in
@@ -280,14 +278,6 @@ struct
     let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2) in
       (r2 - r1, f2 - f1)
 
-  (* returns whether pos is in check by current player *)
-  let in_check pos bd =
-    let under_attack prev move =
-      let (_, pos2) = move in
-        pos2 = pos || prev
-    in
-      List.fold_left under_attack false (generate_moves bd)
-
   let rec clear_path occup bd pos1 pos2 =
     let (dr, df) = vector pos1 pos2 in
       match neighbor dr df pos1 with
@@ -296,11 +286,102 @@ struct
             nb = pos2 || (not (occup nb bd) && clear_path occup bd nb pos2)
 
   let rec unobstructed = clear_path occupied
+
+  let crawl vectors limit bd pos pc =
+    let rec crawl_r cursors squares iter =
+      if iter = 0 || cursors = [] then squares
+      else
+        let update cursors (vec, pos0) =
+          match vec with
+            | None -> cursors
+            | Some (dr, df) ->
+                match neighbor dr df pos0 with
+                  | None -> cursors
+                  | Some nb ->
+                      match lookup nb bd with
+                        | None -> (Some (dr, df), nb) :: cursors
+                        | Some pc2 -> 
+                            if same_color pc pc2 then cursors
+                            else (None, nb) :: cursors
+        in
+        let cursors2 = List.fold_left update [] cursors in
+        let add_square lst (vec, pos) = pos :: lst in
+        let squares2 = List.fold_left add_square squares cursors2 in
+          crawl_r cursors2 squares2 (iter - 1)
+    in
+    let expand vecs (dr, df) = 
+      (dr, df) :: (-dr, df) :: (dr, -df) :: (-dr, -df) :: vecs
+    in
+    let vectors = List.fold_left expand [] vectors in
+    let cursors = List.map (fun vec -> (Some vec, pos)) vectors in
+      crawl_r cursors [] limit
+
+  let is_valid_pawn bd move dir =
+    let (_, {ep_target}) = bd in
+    let (pos1, pos2) = move in
+    let (dr, df) = vector pos1 pos2 in
+    let target = lookup pos2 bd in
+      if dr * dir = 1 then
+        match target with
+          | None -> df = 0 || (abs df = 1 && ep_target = Some pos2)
+          | Some pc -> abs df = 1 && not (same_color_dir dir pc)
+      else match neighbor dir 0 pos1 with
+        | None -> false
+        | Some nb ->
+            let Pos(rank, _) = pos1 in
+              dr * dir = 2 && df = 0 &&
+              target = None && not (occupied nb bd) && 
+              (if dir = 1 then rank = 1 else rank = 6)
+
+  let direction_of_piece pc =
+    match pc with
+      | Black _ -> -1
+      | White _ -> 1
+
+  let generate_moves_pawn bd pos pc =
+    let dir = direction_of_piece pc in
+    let targets = [neighbor dir 0 pos; neighbor (dir * 2) 0 pos;
+                   neighbor dir 1 pos; neighbor dir (-1) pos]
+    in
+    let add_weeded r tgt =
+      match tgt with
+        | None -> r
+        | Some tgt -> 
+            let mv = (pos, tgt) in
+              if is_valid_pawn bd mv dir then tgt :: r else r
+    in
+      List.fold_left add_weeded [] targets
+
+  let generate_moves_from bd pos pc =
+    let targets = match pc with
+      | White Pawn | Black Pawn -> generate_moves_pawn bd pos pc
+      | White Knight | Black Knight -> crawl [(1, 2); (2, 1)] 8 bd pos pc
+      | White Bishop | Black Bishop -> crawl [(1, 1)] 8 bd pos pc
+      | White Rook | Black Rook -> crawl [(1, 0); (0, 1)] 8 bd pos pc
+      | White Queen | Black Queen -> crawl [(1, 1); (1, 0); (0, 1)] 8 bd pos pc
+      | White King | Black King -> crawl [(1, 1); (1, 0); (0, 1)] 1 bd pos pc
+    in List.map (fun pos2 -> Standard(pos, pos2)) targets
+
+  let generate_without_castles bd =
+    let (map, cfg) = bd in
+    let to_play = cfg.to_play in
+    let add_moves pos pc moves =
+      if same_color pc to_play then
+        moves @ (generate_moves_from bd pos pc)
+      else moves
+    in
+      PositionMap.fold add_moves map []
+
+  let in_check pos bd =
+    let under_attack prev move =
+      match move with
+        | Standard (_, pos2) -> pos2 = pos || prev
+        | Castle _ -> false
+    in
+      List.fold_left under_attack false (generate_without_castles (flip bd))
+
   let rec clear_of_check = clear_path in_check
 
-  (* Returns bool indicating whether given castle is currently
-   * allowed by color to play.
-   *)
   let can_castle ctl bd =
     let (_, cfg) = bd in
     let cas = cfg.cas in
@@ -324,23 +405,18 @@ struct
               (create_pos 7 4) (create_pos 7 2) &&
             unobstructed bd (create_pos 7 0) (create_pos 7 4)
 
-  (* Does this leave king in check? *)
-  let is_valid_pawn bd move dir =
-    let (_, {ep_target}) = bd in
-    let (pos1, pos2) = move in
-    let (dr, df) = vector pos1 pos2 in
-    let target = lookup pos2 bd in
-      if dr * dir = 1 then
-        match target with
-          | None -> df = 0 || (abs df = 1 && ep_target = Some pos2)
-          | Some pc -> abs df = 1 && not (same_color dir pc)
-      else match neighbor dir 0 pos1 with
-        | None -> false
-        | Some nb ->
-            let Pos(rank, _) = pos1 in
-              dr * dir = 2 && df = 0 &&
-              target = None && not (occupied nb bd) && 
-              (if dir = 1 then rank = 1 else rank = 6)
+  let generate_moves bd =
+    let std_moves = generate_without_castles bd in
+    let moves =
+      if can_castle Kingside bd then
+        (Castle Kingside) :: std_moves
+      else std_moves
+    in
+      if can_castle Queenside bd then
+        (Castle Queenside) :: moves
+      else moves
+
+  (************ helper functions for is_valid ************)
 
   let is_valid_knight bd move dir =
     let (pos1, pos2) = move in
@@ -349,7 +425,7 @@ struct
     let pattern = (dR, dF) = (1, 2) || (dR, dF) = (2, 1) in
       match lookup pos2 bd with
         | None -> pattern
-        | Some pc -> pattern && not (same_color dir pc)
+        | Some pc -> pattern && not (same_color_dir dir pc)
 
   let is_valid_bishop bd move dir =
     let (pos1, pos2) = move in
@@ -358,7 +434,7 @@ struct
     let pattern = (dR, dF) = (1, 1) && unobstructed bd pos1 pos2 in
       match lookup pos2 bd with
         | None -> pattern
-        | Some pc -> pattern && not (same_color dir pc)
+        | Some pc -> pattern && not (same_color_dir dir pc)
 
   let is_valid_rook bd move dir =
     let (pos1, pos2) = move in
@@ -370,7 +446,7 @@ struct
     in
       match lookup pos2 bd with
         | None -> pattern
-        | Some pc -> pattern && not (same_color dir pc)
+        | Some pc -> pattern && not (same_color_dir dir pc)
         
   let is_valid_queen bd move dir =
     is_valid_rook bd move dir ||
@@ -402,48 +478,91 @@ struct
           )
       | Castle ctl -> can_castle ctl bd
 
-  let play bd move =
-    let rec exec map move =
-      match (move, to_play bd) with
-        | (Standard (pos1, pos2), _) ->
-            (match lookup pos1 bd with
-               | None -> None
-               | Some pc ->
-                   let tmp = PositionMap.add pos2 pc map in
-                     Some (PositionMap.remove pos1 tmp)
-            )
-        | (Castle Queenside, White _) ->
-            (match exec map (Standard(create_pos 0 0, create_pos 0 3)) with
-               | None -> None
-               | Some new_map ->
-                   exec new_map (Standard(create_pos 0 4, create_pos 0 2))
-            )
-        | (Castle Queenside, Black _) ->
-            (match exec map (Standard(create_pos 7 0, create_pos 7 3)) with
-               | None -> None
-               | Some new_map ->
-                   exec new_map (Standard(create_pos 7 4, create_pos 7 2))
-            )
-        | (Castle Kingside, White _) ->
-            (match exec map (Standard(create_pos 0 7, create_pos 0 5)) with
-               | None -> None
-               | Some new_map ->
-                   exec new_map (Standard(create_pos 0 4, create_pos 0 6))
-            )
-        | (Castle Kingside, Black _) ->
-            (match exec map (Standard(create_pos 7 7, create_pos 7 5)) with
-               | None -> None
-               | Some new_map ->
-                   exec new_map (Standard(create_pos 7 4, create_pos 7 6))
-            )
-    in
-      if is_valid bd move then
-        let (map, cfg) = bd in
-          match exec map move with
-            | None -> None
-            | Some new_map -> 
-                Some (flip (new_map, cfg))
+  let determine_target pc pos1 pos2 =
+    let dir = direction_of_piece pc in
+    let (dr, df) = vector pos1 pos2 in
+      if (pc = White Pawn || pc = Black Pawn) && dr * dir = 2
+      then neighbor dir 0 pos1
       else None
+
+  let new_permissions pc pos1 cas =
+    let {wK; wQ; bK; bQ} = cas in
+      match pc with
+        | White King -> {wK = false; wQ = false; bK; bQ}
+        | Black King -> {wK; wQ; bK = false; bQ = false}
+        | White Rook ->
+            if pos1 = create_pos 0 0 then {wK; wQ = false; bK; bQ}
+            else if pos1 = create_pos 0 7 then {wK = false; wQ; bK; bQ}
+            else cas
+        | Black Rook ->
+            if pos1 = create_pos 7 0 then {wK; wQ; bK; bQ = false}
+            else if pos1 = create_pos 7 7 then {wK; wQ; bK = false; bQ}
+            else cas
+        | _ -> cas
+
+  let handle_std bd pc pos1 pos2 =
+    let (map, {to_play; cas; ep_target}) = bd in
+    let new_target = determine_target pc pos1 pos2 in
+    let new_cas = new_permissions pc pos1 cas in
+    let new_cfg = {to_play; cas = new_cas; ep_target = new_target} in
+    let tmp = PositionMap.add pos2 pc map in
+    let prelim = PositionMap.remove pos1 tmp in
+      if ep_target = Some pos2 then
+        let (Pos(r1, _), Pos(_, f2)) = (pos1, pos2) in
+        let ep_rem = create_pos r1 f2 in
+          Some (PositionMap.remove ep_rem prelim, new_cfg)
+      else Some (prelim, new_cfg)
+
+  let check bd =
+    let (map, _) = bd in
+    let king_only = match to_play bd with
+      | White _ -> PositionMap.filter (fun k v -> v = White King) map
+      | Black _ -> PositionMap.filter (fun k v -> v = Black King) map
+    in
+    let (king_pos, _) = PositionMap.choose king_only in
+      in_check king_pos bd
+
+  let rec exec bd move =
+    match (move, to_play bd) with
+      | (Standard (pos1, pos2), _) ->
+          (match lookup pos1 bd with
+            | None -> None
+            | Some pc -> handle_std bd pc pos1 pos2)
+      | (Castle Queenside, White _) ->
+          (match exec bd (Standard(create_pos 0 0, create_pos 0 3)) with
+            | None -> None
+            | Some new_bd ->
+                exec new_bd (Standard(create_pos 0 4, create_pos 0 2)))
+      | (Castle Queenside, Black _) ->
+          (match exec bd (Standard(create_pos 7 0, create_pos 7 3)) with
+            | None -> None
+            | Some new_bd ->
+                exec new_bd (Standard(create_pos 7 4, create_pos 7 2)))
+      | (Castle Kingside, White _) ->
+          (match exec bd (Standard(create_pos 0 7, create_pos 0 5)) with
+            | None -> None
+            | Some new_bd ->
+                exec new_bd (Standard(create_pos 0 4, create_pos 0 6)))
+      | (Castle Kingside, Black _) ->
+          (match exec bd (Standard(create_pos 7 7, create_pos 7 5)) with
+            | None -> None
+            | Some new_bd ->
+                exec new_bd (Standard(create_pos 7 4, create_pos 7 6)))
+
+  let play bd move =
+    if is_valid bd move then
+      match exec bd move with
+        | None -> None
+        | Some new_bd -> 
+            Some (flip new_bd)
+    else None
+
+  let all_moves bd =
+    List.filter (fun mv -> play bd mv != None) (generate_moves bd)
+
+  let checkmate bd =
+    if not (check bd) then false
+    else all_moves bd = []
 end
 
 module StdBoard : BOARD = MapBoard

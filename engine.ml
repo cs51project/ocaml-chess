@@ -27,7 +27,7 @@ sig
   type board
   type move
   type evaluator
-  val strat : board -> evaluator -> move option
+  val strat : evaluator -> board -> move option
 end
 
 module SimpleEval (B : BOARD) =
@@ -37,25 +37,25 @@ struct
   type evaluator = board -> value
   let comp a b =
     let cmp = compare a b in
-    if cmp > 0 then Greater
-    else if cmp = 0 then Equal
-    else Less
-  let negate = ( * ) -1
+    if cmp > 0 then Order.Greater
+    else if cmp = 0 then Order.Equal
+    else Order.Less
+  let negate = ( * ) (-1)
   let apply eval bd = eval bd
   let init_eval bd =
     let pcs = B.all_pieces bd in
     let pc_dir pc =
       match pc with
-        | Black _ -> -1
-        | White _ -> 1 in
+        | B.Black _ -> -1
+        | B.White _ -> 1 in
     let pc_val pc =
       (match pc with
-         | Black Pawn | White Pawn -> 1
-         | Black Knight | White Knight -> 3
-         | Black Bishop | White Bishop -> 3
-         | Black Rook | White Rook -> 5
-         | Black Queen | White Queen -> 9
-         | Black King | White King -> 1000
+         | B.Black B.Pawn | B.White B.Pawn -> 1
+         | B.Black B.Knight | B.White B.Knight -> 3
+         | B.Black B.Bishop | B.White B.Bishop -> 3
+         | B.Black B.Rook | B.White B.Rook -> 5
+         | B.Black B.Queen | B.White B.Queen -> 9
+         | B.Black B.King | B.White B.King -> 1000
       ) * pc_dir pc * pc_dir (B.to_play bd)
     in
       List.fold_left (fun r elt -> let (_, pc) = elt in r + pc_val pc) 0 pcs
@@ -77,8 +77,8 @@ struct
     let rec signed_score bd strat1 strat2 color n =
       let sign =
         match (color, B.to_play bd) with
-          | (Black _, Black _) | (White _, White _) -> (fun x -> x)
-          | (Black _, White _) | (White _, Black _) -> L.negate
+          | (B.Black _, B.Black _) | (B.White _, B.White _) -> (fun x -> x)
+          | (B.Black _, B.White _) | (B.White _, B.Black _) -> L.negate
       in
         if n = 0 then sign (L.apply eval bd)
         else
@@ -94,20 +94,23 @@ struct
   let rec best_against strat eval bd =
     let score = score eval strat (best_against strat eval) in
     let choose_move mv1 mv2 =
-      match (B.play bd mv1, B.play bd mv2) with
-        | (None, None) -> None
-        | (Some _, None) -> mv1
-        | (None, Some _) -> mv2
-        | (Some bd1, Some bd2) ->
-            match L.compare (score bd1) (score bd2) with
-              | Order.Less | Order.Equal -> mv1
-              | Order.Greater -> mv2
+      match mv1 with
+        | None -> Some mv2
+        | Some mv1 ->
+            match (B.play bd mv1, B.play bd mv2) with
+              | (None, None) -> None
+              | (Some _, None) -> Some mv1
+              | (None, Some _) -> Some mv2
+              | (Some bd1, Some bd2) ->
+                  match L.comp (score bd1) (score bd2) with
+                    | Order.Less | Order.Equal -> Some mv1
+                    | Order.Greater -> Some mv2
     in
       match B.all_moves bd with
         | [] -> None
-        | hd :: tl -> List.fold_left choose_move hd tl
+        | hd :: tl -> List.fold_left choose_move (Some hd) tl
   
-  let strat eval = best_against strat eval
+  let rec strat eval = best_against (strat eval) eval
 end
 
 (* Standard synonyms so we can easily change implementation *)

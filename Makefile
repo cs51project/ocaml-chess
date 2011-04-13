@@ -1,7 +1,7 @@
 all: chess
 
 # These must be in the right order--no forward refs
-FILES = board.ml pieces.ml engine.ml server.ml
+FILES = board.ml engine.ml server.ml
 
 chess: $(FILES)
 	ocamlopt -o chess unix.cmxa str.cmxa $(FILES)
