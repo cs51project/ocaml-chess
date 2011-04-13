@@ -192,7 +192,8 @@ function loadBoard(bd)
 
 function initBoard()
 {
-    loadBoard(new Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"));
+    var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    loadBoard(new Board(fen));
 }
 
 // Send a request to the server via AJAX
@@ -235,7 +236,6 @@ function sendAJAX(params, callback)
     
     xhr.open("POST", "index.html", async);
     
-    // set HTTP headers (adapted from http://www.openjs.com/articles/ajax_xmlhttp_using_post.php)
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     
     // send form via POST
@@ -269,8 +269,9 @@ function submitMove(bd, move)
         }
     }
     
-    return sendAJAX("q=submit_move&board=" + urlEncode(bd.toFEN()) +
-                    "&move=" + urlEncode(move), moveCallback);
+    var request = "q=submit_move&board=" + urlEncode(bd.toFEN()) +
+                  "&move=" + urlEncode(move);
+    return sendAJAX(request, moveCallback);
 }
 
 /* Request the board from the server.
@@ -279,5 +280,6 @@ function submitMove(bd, move)
  */
 function requestMove(bd)
 {
-    return sendAJAX("q=request_move&board=" + urlEncode(bd.toFEN()), handleBoard);
+    var request = "q=request_move&board=" + urlEncode(bd.toFEN());
+    return sendAJAX(request, handleBoard);
 }

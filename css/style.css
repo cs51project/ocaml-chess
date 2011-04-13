@@ -41,9 +41,9 @@ table#board
 
 table#board td:hover
 {
-    box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF, inset 0 0 2px #FFF;
-    -webkit-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF, inset 0 0 2px #FFF;
-    -moz-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF, inset 0 0 2px #FFF;
+    box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
+    -webkit-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
+    -moz-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
 }
 
 div.piece-container
@@ -58,7 +58,7 @@ div.piece-container
     width: 45px;
 }
 
-button.reset-button
+button[type=reset]
 {
     display: block;
     position: relative;
