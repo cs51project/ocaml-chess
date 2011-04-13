@@ -78,20 +78,34 @@ let url_decode request =
     List.fold_left add_binding RequestMap.empty bindings
 
 let request_move board_fen =
-  let board = StdBoard.fen_decode board_fen in
-   board_fen
+  match StdBoard.fen_decode board_fen with
+    | None -> "false"
+    | Some board ->
+        match StdEngine.strat StdEval.init_eval board with
+          | None -> "false"
+          | Some mv ->
+              match StdBoard.play board mv with
+                | None -> "false"
+                | Some new_board -> StdBoard.fen_encode new_board
 
 let submit_move board_fen move_str =
-  let board = StdBoard.fen_decode board_fen in
-  let move_re = Str.regexp_case_fold "^\\([a-h][1-8]\\)\\([a-h][1-8]\\)$" in
-  if Str.string_match move_re move_str 0 then
-    let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
-    let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
-    let move = Standard(pos1, pos2) in
-      match StdBoard.play board move with
-        | None -> "false"
-        | Some new_board -> StdBoard.fen_encode new_board
-  else "false"
+  match StdBoard.fen_decode board_fen with
+    | None -> "false"
+    | Some board ->
+        let move_re =
+          Str.regexp_case_fold "^\\([a-h][1-8]\\)\\([a-h][1-8]\\)$"
+        in
+          if not (Str.string_match move_re move_str 0) then "false"
+          else
+            let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
+            let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
+              match (pos1, pos2) with
+                | (None, _) | (_, None) -> "false"
+                | (Some pos1, Some pos2) ->
+                    let move = StdBoard.Standard(pos1, pos2) in
+                      match StdBoard.play board move with
+                        | None -> "false"
+                        | Some new_board -> StdBoard.fen_encode new_board
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =
@@ -203,6 +217,7 @@ let process_request client_fd request =
                 submit_move board move
             else if query = "request_move" then
               request_move board
+            else fail_header
         with _ -> fail_header
       in
         let header = response_header "text/plain; charset=utf-8" in

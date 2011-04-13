@@ -14,6 +14,9 @@ sig
   (* standard starting board *)
   val init_board : board
   
+  (* convert from FEN position to position *)
+  val fen_to_pos : string -> position option
+  
   (* convert from valid FEN to board *)
   val fen_decode : string -> board option
   
@@ -158,7 +161,8 @@ struct
     let r = String.get str 1 in
     let file = (Char.code (Char.lowercase f)) - 97 in
     let rank = (Char.code r) - 49 in
-      create_pos rank file
+      try Some (create_pos rank file)
+      with InvalidPosition -> None
   
   let fen_decode str =
     let fen_re_string =
@@ -173,10 +177,7 @@ struct
         let map = fen_to_map fen_pcs in
         let to_play = fen_to_color fen_color in
         let cas = fen_to_castle fen_castle in
-        let ep_target =
-          try Some (fen_to_pos fen_ep)
-          with InvalidPosition -> None
-        in
+        let ep_target = fen_to_pos fen_ep in
           Some (map, {to_play = to_play; cas = cas; ep_target = ep_target})
       else None
 

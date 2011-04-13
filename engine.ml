@@ -30,7 +30,7 @@ sig
   val strat : evaluator -> board -> move option
 end
 
-module SimpleEval (B : BOARD) =
+module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
   type value = int
@@ -118,6 +118,9 @@ module StdParams : ENGPARAMS =
 struct
   let depth = 5
 end
-module StdEval : EVAL = SimpleEval (StdBoard)
-module StdEngine : ENGINE =
+module StdEval : (EVAL with type board = StdBoard.board) =
+  SimpleEval (StdBoard)
+module StdEngine : (ENGINE with type board = StdBoard.board
+                    and type move = StdBoard.move
+                    and type evaluator = StdEval.evaluator) =
   MinimaxEngine (StdBoard) (StdEval) (StdParams)
