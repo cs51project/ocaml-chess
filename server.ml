@@ -57,7 +57,6 @@ let strip_headers request =
       | Some i -> String.sub request i (String.length request - i)
 
 module RequestMap = Map.Make(String)
-type post_map = string RequestMap.t
 
 (* A post request is encoded in URL form.  This function extracts
  * the key-value pairs.
@@ -217,8 +216,8 @@ let process_request client_fd request =
                 submit_move board move
             else if query = "request_move" then
               request_move board
-            else fail_header
-        with _ -> fail_header
+            else "false"
+        with Not_found -> "false"
       in
         let header = response_header "text/plain; charset=utf-8" in
         send_all client_fd (header ^ response)

@@ -114,12 +114,13 @@ struct
       | None -> false
 
   let char_to_piece c =
+    let lower_c = Char.lowercase c in
     let name =
-      if c = 'p' then Pawn
-      else if c = 'n' then Knight
-      else if c = 'b' then Bishop
-      else if c = 'r' then Rook
-      else if c = 'q' then Queen
+      if lower_c = 'p' then Pawn
+      else if lower_c = 'n' then Knight
+      else if lower_c = 'b' then Bishop
+      else if lower_c = 'r' then Rook
+      else if lower_c = 'q' then Queen
       else King
     in
       if Char.uppercase c = c then White name
@@ -127,13 +128,13 @@ struct
   
   let fen_to_map str =
     let rec fen_to_map_r str map rank file =
-      if str = "" then map
+      if str = "" || rank < 0 then map
       else
         let c = String.get str 0 in
         let ascii = Char.code c in
         let len = String.length str in
         let tail = String.sub str 1 (len - 1) in
-          if c = '/' then
+          if c = '/' || file >= 8 then
             fen_to_map_r tail map (rank - 1) 0
           else if ascii >= 48 && ascii < 58 then
             let gap = ascii - 48 in
@@ -157,23 +158,25 @@ struct
       {wK = wK; wQ = wQ; bK = bK; bQ = bQ}
 
   let fen_to_pos str =
-    let f = String.get str 0 in
-    let r = String.get str 1 in
-    let file = (Char.code (Char.lowercase f)) - 97 in
-    let rank = (Char.code r) - 49 in
-      try Some (create_pos rank file)
-      with InvalidPosition -> None
+    if str = "-" || String.length str != 2 then None
+    else
+      let f = String.get str 0 in
+      let r = String.get str 1 in
+      let file = (Char.code (Char.lowercase f)) - 97 in
+      let rank = (Char.code r) - 49 in
+        try Some (create_pos rank file)
+        with InvalidPosition -> None
   
   let fen_decode str =
     let fen_re_string =
-      "^\\(([pnbrqk0-8]+/){7}[pnbrqk0-8]+\\)[ \t]+" ^
-      "\\(w|b\\)[ \t]+\\([kq]+|-\\)[ \t]+\\([a-h][1-8]\\)$" in
+      "^\\(\\([pnbrqk1-8]+/\\)+[pnbrqk1-8]+\\)[ \t]+" ^
+      "\\(w\\|b\\)[ \t]+\\([kq]+\\|-\\)[ \t]+\\([a-h][1-8]\\|-\\)$" in
     let fen_re = Str.regexp_case_fold fen_re_string in
       if Str.string_match fen_re str 0 then
         let fen_pcs = Str.matched_group 1 str in
-        let fen_color = Str.matched_group 2 str in
-        let fen_castle = Str.matched_group 3 str in
-        let fen_ep = Str.matched_group 4 str in
+        let fen_color = Str.matched_group 3 str in
+        let fen_castle = Str.matched_group 4 str in
+        let fen_ep = Str.matched_group 5 str in
         let map = fen_to_map fen_pcs in
         let to_play = fen_to_color fen_color in
         let cas = fen_to_castle fen_castle in
@@ -211,7 +214,8 @@ struct
               | Some pc ->
                   let c = piece_to_char pc in
                   let c_str = Char.escaped c in
-                    str ^ gap_str ^ c_str
+                  let new_str = str ^ gap_str ^ c_str in
+                    map_to_fen_r new_str rank (file + 1) gap
     in map_to_fen_r "" 7 0 0
   
   let color_to_fen player =

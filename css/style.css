@@ -84,17 +84,17 @@ button[type=reset]
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
-button.reset-button::-moz-focus-inner
+button[type=reset]::-moz-focus-inner
 {
     border: 0;
 }
 
-button.reset-button:hover
+button[type=reset]:hover
 {
     background-color: #1AF;
 }
 
-button.reset-button:active
+button[type=reset]:active
 {
     background-color: #08E;
     color: #CEF;

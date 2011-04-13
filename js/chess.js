@@ -248,30 +248,20 @@ function urlEncode(str)
     return str.replace(/[ \n\t]+/g, "+");
 }
 
-function handleBoard(responseFEN)
+function handleBoard(response)
 {
-    loadBoard(new Board(responseFEN));
+    if(response !== "false")
+        loadBoard(new Board(response));
 }
 
 /* Submit a move to the server via AJAX.
  * Returns false if invalid else a new board.
  */
 function submitMove(bd, move)
-{
-    function moveCallback(response)
-    {
-        /* response is either "false," indicating invalid move,
-         * or a new Board
-         */
-        if(response !== "false")
-        {
-            handleBoard(response);
-        }
-    }
-    
+{   
     var request = "q=submit_move&board=" + urlEncode(bd.toFEN()) +
                   "&move=" + urlEncode(move);
-    return sendAJAX(request, moveCallback);
+    return sendAJAX(request, handleBoard);
 }
 
 /* Request the board from the server.
