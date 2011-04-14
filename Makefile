@@ -11,4 +11,4 @@ check: $(FILES)
 	./check_width $(ALL_FILES)
 
 clean: 
-	rm -f chess *.cmi *.cmo
+	rm -f chess *.cmi *.cmo *.cmx *.o
