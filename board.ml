@@ -215,7 +215,7 @@ struct
                   let c = piece_to_char pc in
                   let c_str = Char.escaped c in
                   let new_str = str ^ gap_str ^ c_str in
-                    map_to_fen_r new_str rank (file + 1) gap
+                    map_to_fen_r new_str rank (file + 1) 0
     in map_to_fen_r "" 7 0 0
   
   let color_to_fen player =
@@ -360,7 +360,7 @@ struct
   let generate_moves_from bd pos pc =
     let targets = match pc with
       | White Pawn | Black Pawn -> generate_moves_pawn bd pos pc
-      | White Knight | Black Knight -> crawl [(1, 2); (2, 1)] 8 bd pos pc
+      | White Knight | Black Knight -> crawl [(1, 2); (2, 1)] 1 bd pos pc
       | White Bishop | Black Bishop -> crawl [(1, 1)] 8 bd pos pc
       | White Rook | Black Rook -> crawl [(1, 0); (0, 1)] 8 bd pos pc
       | White Queen | Black Queen -> crawl [(1, 1); (1, 0); (0, 1)] 8 bd pos pc
@@ -436,7 +436,7 @@ struct
     let (pos1, pos2) = move in
     let (dr, df) = vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
-    let pattern = (dR, dF) = (1, 1) && unobstructed bd pos1 pos2 in
+    let pattern = dR = dF && unobstructed bd pos1 pos2 in
       match lookup pos2 bd with
         | None -> pattern
         | Some pc -> pattern && not (same_color_dir dir pc)
@@ -446,8 +446,7 @@ struct
     let (dr, df) = vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
     let pattern =
-      (dR, dF) = (1, 0) || (dR, dF) = (0, 1) &&
-      unobstructed bd pos1 pos2
+      dR = 0 || dF = 0 && unobstructed bd pos1 pos2
     in
       match lookup pos2 bd with
         | None -> pattern
@@ -478,8 +477,12 @@ struct
       | Standard (pos1, pos2) ->
 	      (match lookup pos1 bd with
 	         | None -> false
-	         | Some (White pc) -> is_valid_for pc bd (pos1, pos2) 1
-             | Some (Black pc) -> is_valid_for pc bd (pos1, pos2) (-1)
+	         | Some (White pc) ->
+	             same_color (White pc) (to_play bd) &&
+	             is_valid_for pc bd (pos1, pos2) 1
+             | Some (Black pc) ->
+                 same_color (Black pc) (to_play bd) &&
+                 is_valid_for pc bd (pos1, pos2) (-1)
           )
       | Castle ctl -> can_castle ctl bd
 
@@ -559,7 +562,8 @@ struct
       match exec bd move with
         | None -> None
         | Some new_bd -> 
-            Some (flip new_bd)
+            if not (check new_bd) then Some (flip new_bd)
+            else None
     else None
 
   let all_moves bd =
