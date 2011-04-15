@@ -221,8 +221,8 @@ struct
   
   let color_to_fen player =
     match player with
-      | White _ -> "w"
-      | Black _ -> "b"
+      | White -> "w"
+      | Black -> "b"
   
   let castle_to_fen cas =
     let {wK; wQ; bK; bQ} = cas in
