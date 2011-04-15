@@ -256,8 +256,8 @@ struct
     let (map, cfg) = bd in
     let {to_play; cas; ep_target} = cfg in
       match to_play with
-        | White x -> (map, {to_play = Black x; cas; ep_target})
-        | Black x -> (map, {to_play = White x; cas; ep_target})
+        | White x -> (map, {to_play = Black; cas; ep_target})
+        | Black x -> (map, {to_play = White; cas; ep_target})
 
   let to_play bd =
     let (_, cfg) = bd in cfg.to_play
