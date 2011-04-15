@@ -12,6 +12,7 @@ sig
   type board
   exception InvalidPosition
 
+
   (* standard starting board *)
   val init_board : board
   
