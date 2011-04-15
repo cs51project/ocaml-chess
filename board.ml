@@ -267,8 +267,8 @@ struct
 
   let same_color pc1 pc2 =
     match (pc1, pc2) with
-      | (White, White) | (Black, Black) -> true
-      | (White, Black) | (Black, White) -> false
+      | (White _, White _) | (Black _, Black _) -> true
+      | (White _, Black _) | (Black _, White _) -> false
 
   let same_color_dir dir pc2 =
     if dir = 1 then same_color (White King) pc2
