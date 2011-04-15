@@ -146,10 +146,10 @@ struct
             let new_map = PositionMap.add pos piece map in
               fen_to_map_r tail new_map rank (file + 1)
     in fen_to_map_r str PositionMap.empty 7 0
-
+  
   let fen_to_color str =
-    if str = "b" then Black King
-    else White King
+    if str = "b" then Black
+    else White
 
   let fen_to_castle str =
     let wK = String.contains str 'K' in
