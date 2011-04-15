@@ -57,8 +57,8 @@ module MapBoard : BOARD =
 struct
   type position = Pos of int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
-  type piece = Black of piece_type | White of piece_type
-  type color = piece
+  type color = Black | White
+  type piece = Piece of color * piece_type
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
   exception InvalidPosition
