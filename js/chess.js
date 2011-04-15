@@ -191,7 +191,7 @@ function loadBoard(bd)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += "<div class='piece-container' onclick='inform("+ id +")'>";
+            html += "<div class='piece-container' onclick=\"inform('"+ id +"')\">";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
