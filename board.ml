@@ -100,8 +100,7 @@ struct
     let add_binding board (pos, pc) = PositionMap.add pos pc board in
     let cas = {wK = true; wQ = true; bK = true; bQ = true} in
       (List.fold_left add_binding PositionMap.empty init_bindings,
-        {to_play = White King; ep_target = None; cas = cas})
-
+        {to_play = White; ep_target = None; cas = cas})
 
   (* Piece in given position *)
   let lookup pos bd =
