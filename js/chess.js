@@ -145,28 +145,6 @@ function Board(strFEN)
     }
 }
 
-// hopefully will create clickable pieces
-// BEGIN HAN HE
-
-
-var square;
-
-function inform(id)
-{
-	if(square == "")
-	{
-		square = id;
-	}
-	
-	else
-	{
-		submitMove(board, square+id);
-		square = "";
-	}
-}
-
-// END HANHE
-
 // load and display a board
 function loadBoard(bd)
 {
@@ -191,7 +169,7 @@ function loadBoard(bd)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += "<div class='piece-container' onclick=\"inform('"+ id +"')\">";
+            html += "<div class='piece-container' draggable=true>";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
