@@ -2,9 +2,7 @@ module type BOARD =
 sig
   type position
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
-  (* CHANGED COLOR!!!! *)
-  type color = Black | White
-  type piece = Piece of color * piece_type
+  type piece = Black of piece_type | White of piece_type
   (* encode Black as Black King, White as White King *)
   type color = piece
   type castle = Queenside | Kingside
@@ -57,8 +55,8 @@ module MapBoard : BOARD =
 struct
   type position = Pos of int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
-  type color = Black | White
-  type piece = Piece of color * piece_type
+  type piece = Black of piece_type | White of piece_type
+  type color = piece
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
   exception InvalidPosition
@@ -100,7 +98,8 @@ struct
     let add_binding board (pos, pc) = PositionMap.add pos pc board in
     let cas = {wK = true; wQ = true; bK = true; bQ = true} in
       (List.fold_left add_binding PositionMap.empty init_bindings,
-        {to_play = White; ep_target = None; cas = cas})
+        {to_play = White King; ep_target = None; cas = cas})
+
 
   (* Piece in given position *)
   let lookup pos bd =
@@ -146,10 +145,10 @@ struct
             let new_map = PositionMap.add pos piece map in
               fen_to_map_r tail new_map rank (file + 1)
     in fen_to_map_r str PositionMap.empty 7 0
-  
+
   let fen_to_color str =
-    if str = "b" then Black
-    else White
+    if str = "b" then Black King
+    else White King
 
   let fen_to_castle str =
     let wK = String.contains str 'K' in
@@ -221,8 +220,8 @@ struct
   
   let color_to_fen player =
     match player with
-      | White -> "w"
-      | Black -> "b"
+      | White _ -> "w"
+      | Black _ -> "b"
   
   let castle_to_fen cas =
     let {wK; wQ; bK; bQ} = cas in
@@ -256,8 +255,8 @@ struct
     let (map, cfg) = bd in
     let {to_play; cas; ep_target} = cfg in
       match to_play with
-        | White x -> (map, {to_play = Black; cas; ep_target})
-        | Black x -> (map, {to_play = White; cas; ep_target})
+        | White x -> (map, {to_play = Black x; cas; ep_target})
+        | Black x -> (map, {to_play = White x; cas; ep_target})
 
   let to_play bd =
     let (_, cfg) = bd in cfg.to_play
