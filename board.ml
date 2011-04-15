@@ -2,7 +2,9 @@ module type BOARD =
 sig
   type position
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
-  type piece = Black of piece_type | White of piece_type
+  (* CHANGED COLOR!!!! *)
+  type color = Black | White
+  type piece = Piece of color * piece_type
   (* encode Black as Black King, White as White King *)
   type color = piece
   type castle = Queenside | Kingside
