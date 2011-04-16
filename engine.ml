@@ -113,6 +113,53 @@ struct
   let rec strat eval = best_against (strat eval) eval
 end
 
+(* an engine using alpha-beta search based on an evaluator *)
+module ABEngine (B : BOARD)
+  (L : EVAL with type board = B.board) (R : ENGPARAMS) :
+  (ENGINE with type board = B.board
+    and type move = B.move
+    and type evaluator = L.evaluator) =
+struct
+  type board = B.board
+  type move = B.move
+  type evaluator = L.evaluator
+
+  let rec score eval bd =
+    let rec score n a b bd =
+      let rec score_moves a b mvs =
+        match mvs with
+          | [] -> -a
+          | mv :: tl ->
+              match B.play mv with
+                | None -> None
+                | Some result ->
+                    let v = (score (n - 1) (-b) (-a) result) in
+                      match (L.cmp a v, L.cmp b v) with
+                        | (Less, Less) -> -b
+                        | (Less, _) -> score_moves v b tl
+                        | (Greater, _) | (Equal, _) -> score_moves a b tl
+      in score_moves a b (B.all_moves bd)
+    in score R.depth None None bd
+  
+  let rec strat eval bd =
+    let choose_move mv1 mv2 =
+      match mv1 with
+        | None -> Some mv2
+        | Some mv1 ->
+            match (B.play bd mv1, B.play bd mv2) with
+              | (None, None) -> None
+              | (Some _, None) -> Some mv1
+              | (None, Some _) -> Some mv2
+              | (Some bd1, Some bd2) ->
+                  match L.comp (score eval bd1) (score eval bd2) with
+                    | Order.Less | Order.Equal -> Some mv1
+                    | Order.Greater -> Some mv2
+    in
+      match B.all_moves bd with
+        | [] -> None
+        | hd :: tl -> List.fold_left choose_move (Some hd) tl
+end
+
 (* Standard synonyms so we can easily change implementation *)
 module StdParams : ENGPARAMS =
 struct
@@ -123,4 +170,4 @@ module StdEval : (EVAL with type board = StdBoard.board) =
 module StdEngine : (ENGINE with type board = StdBoard.board
                     and type move = StdBoard.move
                     and type evaluator = StdEval.evaluator) =
-  MinimaxEngine (StdBoard) (StdEval) (StdParams)
+  ABEngine (StdBoard) (StdEval) (StdParams)
