@@ -283,8 +283,22 @@ struct
     let (Pos(r1, f1), Pos(r2, f2)) = (pos1, pos2) in
       (r2 - r1, f2 - f1)
 
-  let rec clear_path occup bd pos1 pos2 =
+  let unit_vector pos1 pos2 =
+    let rec gcd a b =
+      let a = (if a < b then a else b) in
+      let b = (if a < b then b else a) in
+      let r = b mod a in
+        if r = 0 then a
+        else gcd r a
+    in
     let (dr, df) = vector pos1 pos2 in
+    if dr = 0 then (0, 1)
+    else if df = 0 then (1, 0)
+    else let m = gcd dr df in (dr / m, df / m)
+    
+
+  let rec clear_path occup bd pos1 pos2 =
+    let (dr, df) = unit_vector pos1 pos2 in
       match neighbor dr df pos1 with
         | None -> false
         | Some nb ->

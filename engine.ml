@@ -10,6 +10,8 @@ sig
   type board
   type value
   type evaluator
+  val ubound : value
+  val lbound : value
   val comp : value -> value -> Order.order
   val negate : value -> value
   val apply : evaluator -> board -> value
@@ -33,21 +35,32 @@ end
 module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
-  type value = int
+  type value = Finite of int | Inf | NInf
   type evaluator = board -> value
+  let ubound = Inf
+  let lbound = NInf
   let comp a b =
-    let cmp = compare a b in
-    if cmp > 0 then Order.Greater
-    else if cmp = 0 then Order.Equal
-    else Order.Less
-  let negate = ( * ) (-1)
+    match (a, b) with
+      | (Inf, Inf) | (NInf, NInf) -> Order.Equal
+      | (Inf, _) | (_, NInf) -> Order.Greater
+      | (NInf, _) | (_, Inf) -> Order.Less
+      | (Finite a, Finite b) ->
+          let cmp = compare a b in
+            if cmp > 0 then Order.Greater
+            else if cmp = 0 then Order.Equal
+            else Order.Less
+  let negate a =
+    match a with
+      | Inf -> NInf
+      | NInf -> Inf
+      | Finite a -> Finite (-a)
   let apply eval bd = eval bd
   let init_eval bd =
     let pcs = B.all_pieces bd in
     let pc_dir pc =
-      match pc with
-        | B.Black _ -> -1
-        | B.White _ -> 1 in
+      match (pc, B.to_play bd) with
+        | (B.Black _, B.White _) | (B.White _, B.Black _) -> -1
+        | (B.White _, B.White _) | (B.Black _, B.Black _) -> 1 in
     let pc_val pc =
       (match pc with
          | B.Black B.Pawn | B.White B.Pawn -> 1
@@ -58,7 +71,8 @@ struct
          | B.Black B.King | B.White B.King -> 1000
       ) * pc_dir pc * pc_dir (B.to_play bd)
     in
-      List.fold_left (fun r elt -> let (_, pc) = elt in r + pc_val pc) 0 pcs
+    let eval_binding r (_, pc) = r + pc_val pc in
+      Finite (List.fold_left eval_binding 0 pcs)
   let train eval = eval
 end
 
@@ -126,20 +140,23 @@ struct
 
   let rec score eval bd =
     let rec score n a b bd =
-      let rec score_moves a b mvs =
-        match mvs with
-          | [] -> -a
-          | mv :: tl ->
-              match B.play mv with
-                | None -> None
-                | Some result ->
-                    let v = (score (n - 1) (-b) (-a) result) in
-                      match (L.cmp a v, L.cmp b v) with
-                        | (Less, Less) -> -b
-                        | (Less, _) -> score_moves v b tl
-                        | (Greater, _) | (Equal, _) -> score_moves a b tl
-      in score_moves a b (B.all_moves bd)
-    in score R.depth None None bd
+      if n <= 0 then L.apply eval bd
+      else
+        let rec score_moves a b mvs =
+          match mvs with
+            | [] -> L.negate a
+            | mv :: tl ->
+                match B.play bd mv with
+                  | None -> score_moves a b tl
+                  | Some result ->
+                      let v = score (n - 1) b (L.negate a) result in
+                        match (L.comp a v, L.comp b v) with
+                          | (Order.Less, Order.Less) -> b
+                          | (Order.Less, _) -> score_moves v b tl
+                          | (Order.Greater, _) | (Order.Equal, _) ->
+                              score_moves a b tl
+        in score_moves a b (B.all_moves bd)
+    in score R.depth L.ubound L.lbound bd
   
   let rec strat eval bd =
     let choose_move mv1 mv2 =
@@ -163,7 +180,7 @@ end
 (* Standard synonyms so we can easily change implementation *)
 module StdParams : ENGPARAMS =
 struct
-  let depth = 5
+  let depth = 4
 end
 module StdEval : (EVAL with type board = StdBoard.board) =
   SimpleEval (StdBoard)
