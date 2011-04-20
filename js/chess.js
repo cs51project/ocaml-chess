@@ -169,7 +169,9 @@ function loadBoard(bd)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += "<div class='piece-container' draggable=true>";
+            html += "<div class='piece-container' draggable=true " +
+                    "ondrag=\"handleDrag('" + id + 
+                    "')\" ondrop=\"handleDrag('" + id + "')\">";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
@@ -194,6 +196,14 @@ function initBoard()
 {
     var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     loadBoard(new Board(fen));
+}
+
+function handleDrag(str)
+{
+    if(!this.str)
+        this.str = str;
+    else
+        submitMove(this.str + str);
 }
 
 // Send a request to the server via AJAX
