@@ -6,9 +6,6 @@ var async = true;
 // current board
 var board = null;
 
-// current move origin square (for drag-and-drop)
-var square = ""
-
 /* Comprehensive board object -- stores the state of a game
  * on the client side.  We can build a board from a string in
  * Forsyth-Edwards Notation.
@@ -148,84 +145,6 @@ function Board(strFEN)
     }
 }
 
-// load and display a board
-function loadBoard(bd)
-{
-    board = bd;
-    
-    var boardView = document.getElementById("board");
-    
-    var html = "";
-    for(var rank = 7; rank >= 0; rank--)
-    {
-        html += "<tr id='rank_" + (rank + 1) + "'>";
-        
-        for(var file = 0; file < 8; file++)
-        {
-            // set up the chessboard pattern
-            var fileName = String.fromCharCode(65 + file);
-            var background = ((file % 2) ^ (rank % 2))? "white" : "#05A";
-            var color = (background === "#05A")? "white" : "#05A";
-            var id = fileName + (rank + 1);
-            
-            html += "<td class='file_" + fileName + "' id='" + id +
-                    "' style='background-color: " + background +
-                    "; color: " + color + ";' " +
-                    "ondragenter='handleDragEnter(this, event)' " + 
-                    "ondragover='handleDragOver(this,event)' " +
-                    "ondrop='handleDrop(this)' ondragdrop='handleDrop(this)'>";
-            
-            html += "<div class='piece-container' draggable='true' " +
-                    "ondragstart='handleDrag(this)'>";
-            
-            // insert the proper piece into each square
-            if(bd != null && bd.pieceAt(rank, file) != null)
-            {
-                var piece = bd.pieceAt(rank, file);
-                html += "<div class='piece." + piece +
-                        "' style=\"background-position: center;" +
-                        "background-image: url('images/" + piece +
-                        ".svg'); height: 45px; width: 45px;\"></div>";
-            }
-            
-            html += "</div></td>";
-        }
-        
-        html += "</tr>";
-    }
-    
-    boardView.innerHTML = html;
-}
-
-function initBoard()
-{
-    var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-    loadBoard(new Board(fen));
-}
-
-function handleDrag(elt)
-{
-    square = elt.parentNode.id;
-}
-
-function handleDragEnter(elt, evt)
-{
-    evt.preventDefault();
-    return true;
-}
-
-function handleDragOver(elt, evt)
-{
-    evt.preventDefault();
-    return true;
-}
-
-function handleDrop(elt)
-{
-    submitMove(square + elt.id);
-    square = "";
-}
-
 // Send a request to the server via AJAX
 function sendAJAX(params, callback)
 {
@@ -264,7 +183,6 @@ function sendAJAX(params, callback)
     
     xhr.onreadystatechange = genericAJAXHandler(callback);
     
-    // needs to be posted to something that will handle it
     xhr.open("POST", "index.html", async);
     
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -286,7 +204,6 @@ function handleBoard(response)
 }
 
 /* Submit a move to the server via AJAX.
- * Returns false if invalid else a new board.
  */
 function submitMove(move)
 {   
@@ -305,3 +222,84 @@ function requestMove()
     return sendAJAX(request, handleBoard);
 }
 
+function handleDragStart(evt)
+{
+    evt.dataTransfer.setData("text/plain", evt.target.parentNode.id);
+    return true;
+}
+
+function handleDragEnter(evt)
+{
+    evt.preventDefault();
+    return true;
+}
+
+function handleDragOver(evt)
+{
+    evt.preventDefault();
+    return true;
+}
+
+function handleDrop(elt, evt)
+{
+    var sq1 = evt.dataTransfer.getData("text/plain");
+    var sq2 = elt.id;
+    var moveText = sq1 + sq2;
+    submitMove(moveText);
+}
+
+// load and display a board
+function loadBoard(bd)
+{
+    board = bd;
+    
+    var boardView = document.getElementById("board");
+    
+    var html = "";
+    for(var rank = 7; rank >= 0; rank--)
+    {
+        html += "<tr id='rank_" + (rank + 1) + "'>";
+        
+        for(var file = 0; file < 8; file++)
+        {
+            // set up the chessboard pattern
+            var fileName = String.fromCharCode(65 + file);
+            var background = ((file % 2) ^ (rank % 2))? "white" : "#05A";
+            var color = (background === "#05A")? "white" : "#05A";
+            var id = fileName + (rank + 1);
+            
+            html += "<td class='file_" + fileName + "' id='" + id +
+                    "' style='background-color: " + background +
+                    "; color: " + color + ";' " +
+                    "ondragenter='handleDragEnter(event)' " + 
+                    "ondragover='handleDragOver(event)' " +
+                    "ondrop='handleDrop(this, event);'>";
+            
+            html += "<div class='piece-container' draggable='true' " +
+                    "ondragstart='handleDragStart(event)' " +
+                    "onDrop='handleDrop(this.parentNode, event);'>";
+            
+            // insert the proper piece into each square
+            if(bd != null && bd.pieceAt(rank, file) != null)
+            {
+                var piece = bd.pieceAt(rank, file);
+                html += "<div class='piece." + piece +
+                        "' style=\"background-position: center;" +
+                        "background-image: url('images/" + piece +
+                        ".svg'); height: 45px; width: 45px;\"></div>";
+            }
+            
+            html += "</div></td>";
+        }
+        
+        html += "</tr>";
+    }
+    
+    boardView.innerHTML = html;
+}
+
+function initBoard()
+{
+    var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
+    loadBoard(new Board(fen));
+}

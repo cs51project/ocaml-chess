@@ -294,7 +294,7 @@ struct
     let (dr, df) = vector pos1 pos2 in
     if dr = 0 then (0, 1)
     else if df = 0 then (1, 0)
-    else let m = gcd dr df in (dr / m, df / m)
+    else let m = gcd (abs dr) (abs df) in (dr / m, df / m)
     
 
   let rec clear_path occup bd pos1 pos2 =
