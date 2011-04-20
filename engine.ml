@@ -138,7 +138,8 @@ struct
   type move = B.move
   type evaluator = L.evaluator
 
-  let rec score eval bd =
+(* this is confusing--we shouldn't have score shadow score *)  
+let rec score eval bd =
     let rec score n a b bd =
       if n <= 0 then L.apply eval bd
       else

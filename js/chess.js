@@ -234,6 +234,7 @@ function sendAJAX(params, callback)
     
     xhr.onreadystatechange = genericAJAXHandler(callback);
     
+    // needs to be posted to something that will handle it
     xhr.open("POST", "index.html", async);
     
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -273,3 +274,8 @@ function requestMove(bd)
     var request = "q=request_move&board=" + urlEncode(bd.toFEN());
     return sendAJAX(request, handleBoard);
 }
+
+$(function() {
+    $(".piece-container").draggable();
+});
+
