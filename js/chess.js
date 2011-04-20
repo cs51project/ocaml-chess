@@ -169,7 +169,9 @@ function loadBoard(bd)
                     "' style='background-color: " + background +
                     "; color: " + color + ";'>";
             
-            html += "<div class='piece-container' draggable=true>";
+            html += "<div class='piece-container' draggable=true " +
+                    "ondrag=\"handleDrag('" + id + 
+                    "')\" ondrop=\"handleDrag('" + id + "')\">";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
@@ -194,6 +196,14 @@ function initBoard()
 {
     var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     loadBoard(new Board(fen));
+}
+
+function handleDrag(str)
+{
+    if(!this.str)
+        this.str = str;
+    else
+        submitMove(this.str + str);
 }
 
 // Send a request to the server via AJAX
@@ -258,9 +268,9 @@ function handleBoard(response)
 /* Submit a move to the server via AJAX.
  * Returns false if invalid else a new board.
  */
-function submitMove(bd, move)
+function submitMove(move)
 {   
-    var request = "q=submit_move&board=" + urlEncode(bd.toFEN()) +
+    var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
     return sendAJAX(request, handleBoard);
 }
@@ -269,9 +279,9 @@ function submitMove(bd, move)
  * If the server is to move, causes the
  * server to make its move.
  */
-function requestMove(bd)
+function requestMove()
 {
-    var request = "q=request_move&board=" + urlEncode(bd.toFEN());
+    var request = "q=request_move&board=" + urlEncode(board.toFEN());
     return sendAJAX(request, handleBoard);
 }
 

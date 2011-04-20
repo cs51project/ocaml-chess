@@ -138,26 +138,27 @@ struct
   type move = B.move
   type evaluator = L.evaluator
 
-(* this is confusing--we shouldn't have score shadow score *)  
-let rec score eval bd =
-    let rec score n a b bd =
+  let rec score eval bd =
+    let rec score_r n a b bd =
       if n <= 0 then L.apply eval bd
       else
         let rec score_moves a b mvs =
           match mvs with
-            | [] -> L.negate a
+            | [] -> a
             | mv :: tl ->
                 match B.play bd mv with
                   | None -> score_moves a b tl
                   | Some result ->
-                      let v = score (n - 1) b (L.negate a) result in
+                      let rec_a = L.negate b in
+                      let rec_b = L.negate a in
+                      let v = -(score_r (n - 1) rec_a rec_b result) in
                         match (L.comp a v, L.comp b v) with
-                          | (Order.Less, Order.Less) -> b
+                          | (Order.Less, Order.Less) -> a
                           | (Order.Less, _) -> score_moves v b tl
                           | (Order.Greater, _) | (Order.Equal, _) ->
                               score_moves a b tl
         in score_moves a b (B.all_moves bd)
-    in score R.depth L.ubound L.lbound bd
+    in score_r R.depth L.ubound L.lbound bd
   
   let rec strat eval bd =
     let choose_move mv1 mv2 =
