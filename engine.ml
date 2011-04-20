@@ -151,7 +151,7 @@ struct
                   | Some result ->
                       let rec_a = L.negate b in
                       let rec_b = L.negate a in
-                      let v = -(score_r (n - 1) rec_a rec_b result) in
+                      let v = L.negate (score_r (n - 1) rec_a rec_b result) in
                         match (L.comp a v, L.comp b v) with
                           | (Order.Less, Order.Less) -> a
                           | (Order.Less, _) -> score_moves v b tl

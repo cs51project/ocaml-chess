@@ -6,6 +6,9 @@ var async = true;
 // current board
 var board = null;
 
+// current move origin square (for drag-and-drop)
+var square = ""
+
 /* Comprehensive board object -- stores the state of a game
  * on the client side.  We can build a board from a string in
  * Forsyth-Edwards Notation.
@@ -167,11 +170,13 @@ function loadBoard(bd)
             
             html += "<td class='file_" + fileName + "' id='" + id +
                     "' style='background-color: " + background +
-                    "; color: " + color + ";'>";
+                    "; color: " + color + ";' " +
+                    "ondragenter='handleDragEnter(this, event)' " + 
+                    "ondragover='handleDragOver(this,event)' " +
+                    "ondrop='handleDrop(this)' ondragdrop='handleDrop(this)'>";
             
-            html += "<div class='piece-container' draggable=true " +
-                    "ondrag=\"handleDrag('" + id + 
-                    "')\" ondrop=\"handleDrag('" + id + "')\">";
+            html += "<div class='piece-container' draggable='true' " +
+                    "ondragstart='handleDrag(this)'>";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
@@ -198,12 +203,27 @@ function initBoard()
     loadBoard(new Board(fen));
 }
 
-function handleDrag(str)
+function handleDrag(elt)
 {
-    if(!this.str)
-        this.str = str;
-    else
-        submitMove(this.str + str);
+    square = elt.parentNode.id;
+}
+
+function handleDragEnter(elt, evt)
+{
+    evt.preventDefault();
+    return true;
+}
+
+function handleDragOver(elt, evt)
+{
+    evt.preventDefault();
+    return true;
+}
+
+function handleDrop(elt)
+{
+    submitMove(square + elt.id);
+    square = "";
 }
 
 // Send a request to the server via AJAX

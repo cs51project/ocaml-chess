@@ -31,9 +31,6 @@ table#board
     width: 640px;
     height: 640px;
     text-align: center;
-    user-drag: none;
-    -webkit-user-drag: none;
-    -moz-user-drag: none;
     padding: 0px;
     font-weight: 100;
 }
@@ -52,7 +49,6 @@ div.piece-container
     margin-right: auto;
     user-drag: element;
     -webkit-user-drag: element;
-    -moz-user-drag: element;
     height: 45px;
     width: 45px;
 }
