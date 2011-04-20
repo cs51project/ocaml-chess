@@ -257,9 +257,9 @@ function handleBoard(response)
 /* Submit a move to the server via AJAX.
  * Returns false if invalid else a new board.
  */
-function submitMove(bd, move)
+function submitMove(move)
 {   
-    var request = "q=submit_move&board=" + urlEncode(bd.toFEN()) +
+    var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
     return sendAJAX(request, handleBoard);
 }
@@ -268,8 +268,8 @@ function submitMove(bd, move)
  * If the server is to move, causes the
  * server to make its move.
  */
-function requestMove(bd)
+function requestMove()
 {
-    var request = "q=request_move&board=" + urlEncode(bd.toFEN());
+    var request = "q=request_move&board=" + urlEncode(board.toFEN());
     return sendAJAX(request, handleBoard);
 }
