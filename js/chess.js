@@ -305,7 +305,3 @@ function requestMove()
     return sendAJAX(request, handleBoard);
 }
 
-$(function() {
-    $(".piece-container").draggable();
-});
-
