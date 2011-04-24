@@ -438,7 +438,7 @@ struct
 
   let is_valid_knight bd move dir =
     let (pos1, pos2) = move in
-    let (dr, df) = unit_vector pos1 pos2 in
+    let (dr, df) = vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
     let pattern = (dR, dF) = (1, 2) || (dR, dF) = (2, 1) in
       match lookup pos2 bd with
