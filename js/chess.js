@@ -277,18 +277,27 @@ function handleDrop(elt, evt)
     var sq2 = elt.id.toLowerCase();
     var moveText = "";
     // check for castling!!!
-    if(sq1 === "e1" || sq1 === "e8")
+    if((sq1 === "e1" && board.pieces[0][4] == "wking") ||
+       (sq1 === "e8" && board.pieces[7][4] == "bking"))
     {
         if(sq2.charAt(0) === 'c')
             moveText = "OOO";
         else if(sq2.charAt(0) === 'g')
             moveText = "OO";
+        else
+            moveText = sq1 + sq2;
     }
     else
         moveText = sq1 + sq2;
+<<<<<<< HEAD
     
     submitMove(moveText);
     //submitMoveAgainstSelf(moveText);
+=======
+
+    //submitMove(moveText);
+    submitMoveAgainstSelf(moveText);
+>>>>>>> 20456831dd95cacc77bb6f32d329bb9672733e11
 }
 
 // load and display a board
