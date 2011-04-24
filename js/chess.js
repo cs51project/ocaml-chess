@@ -9,7 +9,7 @@ var board = null;
 /* Comprehensive board object -- stores the state of a game
  * on the client side.  We can build a board from a string in
  * Forsyth-Edwards Notation.
- * (See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation.)
+ * (See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation )
  */
 function Board(strFEN)
 {

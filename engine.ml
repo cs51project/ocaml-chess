@@ -32,11 +32,10 @@ sig
   val strat : evaluator -> board -> move option
 end
 
-
 module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
-  type value = Finite of int | Inf | NInf
+  type value = Finite of float | Inf | NInf
   type evaluator = board -> value
   let ubound = Inf
   let lbound = NInf
@@ -62,19 +61,25 @@ struct
       match pc with
         | B.Black _ -> -1
         | B.White _ -> 1 in
-    let pc_val pc =
-      (match pc with
-         | B.Black B.Pawn | B.White B.Pawn -> 1
-         | B.Black B.Knight | B.White B.Knight -> 3
-         | B.Black B.Bishop | B.White B.Bishop -> 3
-         | B.Black B.Rook | B.White B.Rook -> 5
-         | B.Black B.Queen | B.White B.Queen -> 9
-         | B.Black B.King | B.White B.King -> 10000
-      ) * pc_dir pc * pc_dir (B.to_play bd) in 
-	let ck = if (B.check bd) then -1 else 0 in
-	let ckmt = if (B.checkmate bd) then -10000 else 0 in
-    let eval_binding r (_, pc) = r + pc_val pc in
-      Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
+    let pc_val pc pos =
+      (match (pc, pos) with
+         | (B.Black B.Pawn, Pos(a, b)) -> 10. +. 7. -. a
+		 | (B.White B.Pawn, Pos(a, b)) -> 10. +. a
+         | (B.Black B.Knight Pos(a, b)) -> 30. +. abs_float(a -. 3.5) +. abs_float(b -. 3.5)
+		 | (B.White B.Knight, Pos(a, b)) -> 30. +. abs_float(a -. 3.5) +. abs_float(b -. 3.5)
+         | (B.Black B.Bishop, Pos(a, b)) -> 30.
+		 | (B.White B.Bishop, Pos(a, b)) -> 30.
+         | (B.Black B.Rook, Pos(a, b)) -> 50.
+		 | (B.White B.Rook, Pos(a, b)) -> 50.
+         | (B.Black B.Queen, Pos(a, b)) -> 90.
+		 | (B.White B.Queen, Pos(a, b)) -> 90.
+         | (B.Black B.King, Pos(a, b)) -> 10000.
+		 | (B.White B.King, Pos(a, b)) -> 10000.
+      ) *. pc_dir pc *. pc_dir (B.to_play bd) in
+let ck = if (B.check bd) then -5 else 0 in
+let ckmt = if (B.checkmate bd) then -10000 else 0 in
+    let eval_binding r (pos, pc) = r +. pc_val pc pos in
+      Finite(ck +. ckmt +. List.fold_left eval_binding 0. pcs)
   let train eval = eval
 end
 
