@@ -410,19 +410,19 @@ struct
       match (to_play, ctl) with
         | (White _, Kingside) ->
             cas.wK && clear_of_check bd (create_pos 0 4) (create_pos 0 6) &&
-            not (in_check (create_pos 0 4)) &&
+            not (in_check (create_pos 0 4) bd) &&
             unobstructed bd (create_pos 0 4) (create_pos 0 7)
         | (White _, Queenside) ->
             cas.wQ && clear_of_check bd (create_pos 0 4) (create_pos 0 2) &&
-            not (in_check (create_pos 0 4)) &&
+            not (in_check (create_pos 0 4) bd) &&
             unobstructed bd (create_pos 0 0) (create_pos 0 4)
         | (Black _, Kingside) ->
             cas.bK && clear_of_check bd (create_pos 7 4) (create_pos 7 6) &&
-            not (in_check (create_pos 7 4)) &&
+            not (in_check (create_pos 7 4) bd) &&
             unobstructed bd (create_pos 7 4) (create_pos 7 7)
         | (Black _, Queenside) ->
             cas.bQ && clear_of_check bd (create_pos 7 4) (create_pos 7 2) &&
-            not (in_check (create_pos 7 4)) &&
+            not (in_check (create_pos 7 4) bd) &&
             unobstructed bd (create_pos 7 0) (create_pos 7 4)
 
   let generate_moves bd =
