@@ -234,7 +234,7 @@ function submitMoveAgainstSelf(move)
 {   
     var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
-    return sendAJAX(request, handleBoardNoFollowup);
+    return sendAJAX(request, handleResponseNoFollowup);
 }
 
 /* Request the board from the server.
