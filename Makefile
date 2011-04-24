@@ -1,6 +1,6 @@
 all: chess
 
-FILES = board.ml engine.ml server.ml
+FILES = board.ml brain.ml engine.ml server.ml
 ALL_FILES = $(FILES) index.html css/style.css js/chess.js
 
 chess: $(FILES)
