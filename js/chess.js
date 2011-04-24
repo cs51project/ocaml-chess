@@ -210,6 +210,13 @@ function handleBoardDemo(response)
     requestMoveDemo();
 }
 
+function handleBoardAgainstMachine(response)
+{
+    if(response !== "false")
+        loadBoard(new Board(response));
+    requestMoveAgainstMachine();
+}
+
 /* Submit a move to the server via AJAX.
  */
 function submitMove(move)
@@ -217,6 +224,13 @@ function submitMove(move)
     var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
     return sendAJAX(request, handleBoard);
+}
+
+function submitMoveAgainstMachine(move)
+{   
+    var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
+                  "&move=" + urlEncode(move);
+    return sendAJAX(request, handleBoardAgainstMachine);
 }
 
 /* Request the board from the server.
@@ -233,6 +247,12 @@ function requestMoveDemo()
 {
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
     return sendAJAX(request, handleBoardDemo);
+}
+
+function requestMoveAgainstMachine()
+{
+    var request = "q=request_move&board=" + urlEncode(board.toFEN());
+    return sendAJAX(request, handleBoard);
 }
 
 
