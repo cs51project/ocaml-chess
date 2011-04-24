@@ -92,19 +92,27 @@ let submit_move board_fen move_str =
     | None -> "false"
     | Some board ->
         let move_re =
-          Str.regexp_case_fold "^\\([a-h][1-8]\\)\\([a-h][1-8]\\)$"
+          Str.regexp_case_fold "^\\([a-h][1-8]\\)\\([a-h][1-8]\\)\\|OOO\\|OO$"
         in
           if not (Str.string_match move_re move_str 0) then "false"
-          else
-            let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
-            let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
-              match (pos1, pos2) with
-                | (None, _) | (_, None) -> "false"
-                | (Some pos1, Some pos2) ->
-                    let move = StdBoard.Standard(pos1, pos2) in
-                      match StdBoard.play board move with
-                        | None -> "false"
-                        | Some new_board -> StdBoard.fen_encode new_board
+          else 
+            let move =
+              if move_str = "OOO" then StdBoard.Castle StdBoard.Queenside
+              else if move_str = "OO" then StdBoard.Castle StdBoard.Kingside
+              else
+                let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
+                let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
+                  match (pos1, pos2) with
+                    | (None, _) | (_, None) -> None
+                    | (Some pos1, Some pos2) ->
+                        Some (StdBoard.Standard(pos1, pos2))
+            in
+              match move with
+                | None -> "false"
+                | Some move ->
+                    match StdBoard.play board move with
+                      | None -> "false"
+                      | Some new_board -> StdBoard.fen_encode new_board
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =

@@ -278,7 +278,17 @@ function handleDrop(elt, evt)
 {
     var sq1 = evt.dataTransfer.getData("text/plain");
     var sq2 = elt.id;
-    var moveText = sq1 + sq2;
+    var moveText = "";
+    // check for castling!!!
+    if(sq1 = "e1" || sq1 = "e8")
+    {
+        if(sq2.charAt(0) === 'c')
+            moveText = "OOO";
+        else if(sq2.charAt(0) === 'g')
+            moveText = "OO";
+    }
+    else
+        moveText = sq1 + sq2;
     submitMove(moveText);
 }
 
