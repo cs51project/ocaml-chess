@@ -9,7 +9,7 @@ var board = null;
 /* Comprehensive board object -- stores the state of a game
  * on the client side.  We can build a board from a string in
  * Forsyth-Edwards Notation.
- * (See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation )
+ * (See http://en.wikipedia.org/wiki/Forsyth-Edwards_Notation.)
  */
 function Board(strFEN)
 {
@@ -203,6 +203,13 @@ function handleBoard(response)
         loadBoard(new Board(response));
 }
 
+function handleBoardDemo(response)
+{
+    if(response !== "false")
+        loadBoard(new Board(response));
+    requestMoveDemo();
+}
+
 /* Submit a move to the server via AJAX.
  */
 function submitMove(move)
@@ -221,6 +228,13 @@ function requestMove()
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
     return sendAJAX(request, handleBoard);
 }
+
+function requestMoveDemo()
+{
+    var request = "q=request_move&board=" + urlEncode(board.toFEN());
+    return sendAJAX(request, handleBoardDemo);
+}
+
 
 function handleDragStart(evt)
 {
@@ -244,7 +258,17 @@ function handleDrop(elt, evt)
 {
     var sq1 = evt.dataTransfer.getData("text/plain");
     var sq2 = elt.id;
-    var moveText = sq1 + sq2;
+    var moveText = "";
+    // check for castling!!!
+    if(sq1 = "e1" || sq1 = "e8")
+    {
+        if(sq2.charAt(0) === 'c')
+            moveText = "OOO";
+        else if(sq2.charAt(0) === 'g')
+            moveText = "OO";
+    }
+    else
+        moveText = sq1 + sq2;
     submitMove(moveText);
 }
 

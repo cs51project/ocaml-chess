@@ -786,5 +786,7 @@ struct
 
   let checkmate bd =
 end
+
 *)
+
 module StdBoard : BOARD = MapBoard
