@@ -9,10 +9,16 @@ sig
   type move = Standard of position * position | Castle of castle
   type board
   exception InvalidPosition
-
-
+  
   (* standard starting board *)
   val init_board : board
+
+  (* build position from pair of integers:
+   *   create_pos rank file,
+   * where rank, file are between 0 and 7, else
+   * raises InvalidPosition
+   *)
+  val create_pos : int -> int -> position
   
   (* convert from FEN position to position *)
   val fen_to_pos : string -> position option
@@ -22,13 +28,6 @@ sig
   
   (* convert from board to FEN *)
   val fen_encode : board -> string
-  
-  (* build position from pair of integers:
-   *   create_pos rank file,
-   * where rank, file are between 0 and 7, else
-   * raises InvalidPosition
-   *)
-  val create_pos : int -> int -> position
 
   (* which color is to play *)
   val to_play : board -> color
@@ -586,6 +585,198 @@ struct
   let checkmate bd =
     if not (check bd) then false
     else all_moves bd = []
+end
+
+module BitBoard : BOARD =
+struct
+  type bitmask = int64
+  type position = bitmask
+  type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
+  type piece = Black of piece_type | White of piece_type
+  type color = piece
+  type castle = Queenside | Kingside
+  type move = Standard of position * position | Castle of castle
+  type castle_rec = {wK : bool; wQ : bool; bK : bool; bQ : bool}
+  type board_config = {to_play : color; cas: castle_rec;
+                       ep_target : position option}
+  type board = (bitmask array) * board_config
+  exception InvalidPosition
+  
+  let init_board =
+    let init_bits =
+      [|
+        0x000000000000ff00; 0x00ff000000000000; (* pawns *)
+        0x0000000000000042; 0x4200000000000000; (* knights *)
+        0x0000000000000024; 0x2400000000000000; (* bishops *)
+        0x0000000000000081; 0x8100000000000000; (* rooks *)
+        0x0000000000000010; 0x1000000000000000; (* queens *)
+        0x0000000000000008; 0x0800000000000000
+      |] in
+    let cas = {wK = true; wQ = true; bK = true; bQ = true} in
+      (init_bits, {to_play = White King; ep_target = None; cas = cas})
+
+  let create_pos rank file =
+    let bit_index = rank * 8 + file in
+      Int64.shift_left 1L bit_index
+
+  let fen_to_pos =
+    if str = "-" || String.length str != 2 then None
+    else
+      let f = String.get str 0 in
+      let r = String.get str 1 in
+      let file = (Char.code (Char.lowercase f)) - 97 in
+      let rank = (Char.code r) - 49 in
+        try Some (create_pos rank file)
+        with InvalidPosition -> None
+
+  let piece_to_index pc =
+    match pc with
+      | White Pawn -> 0
+      | Black Pawn -> 1
+      | White Knight -> 2
+      | Black Knight -> 3
+      | White Bishop -> 4
+      | Black Bishop -> 5
+      | White Rook -> 6
+      | Black Rook -> 7
+      | White Queen -> 8
+      | Black Queen -> 9
+      | White King -> 10
+      | Black King -> 11
+
+  let char_to_piece c =
+    let lower_c = Char.lowercase c in
+    let name =
+      if lower_c = 'p' then Pawn
+      else if lower_c = 'n' then Knight
+      else if lower_c = 'b' then Bishop
+      else if lower_c = 'r' then Rook
+      else if lower_c = 'q' then Queen
+      else King
+    in
+      if Char.uppercase c = c then White name
+      else Black name
+  
+  let fen_to_bits str =
+    let rec fen_to_bits_r str bits rank file =
+      if str = "" || rank < 0 then bits
+      else
+        let c = String.get str 0 in
+        let ascii = Char.code c in
+        let len = String.length str in
+        let tail = String.sub str 1 (len - 1) in
+          if c = '/' || file >= 8 then
+            fen_to_map_r tail map (rank - 1) 0
+          else if ascii >= 48 && ascii < 58 then
+            let gap = ascii - 48 in
+              fen_to_map_r tail map rank (file + gap)
+          else
+            let index = piece_to_index (char_to_piece c) in
+            let pos = create_pos rank file in
+            let _ = bits.(index) <- Int64.logor bits.(index) pos in
+              fen_to_map_r tail bits rank (file + 1)
+    in fen_to_bits_r str (Array.make 12 0L) 7 0
+
+  let fen_to_color str =
+    if str = "b" then Black King
+    else White King
+
+  let fen_to_castle str =
+    let wK = String.contains str 'K' in
+    let wQ = String.contains str 'Q' in
+    let bK = String.contains str 'k' in
+    let bQ = String.contains str 'q' in
+      {wK = wK; wQ = wQ; bK = bK; bQ = bQ}
+
+  let fen_to_pos str =
+    if str = "-" || String.length str != 2 then None
+    else
+      let f = String.get str 0 in
+      let r = String.get str 1 in
+      let file = (Char.code (Char.lowercase f)) - 97 in
+      let rank = (Char.code r) - 49 in
+        try Some (create_pos rank file)
+        with InvalidPosition -> None
+  
+  let fen_decode str =
+    let fen_re_string =
+      "^\\(\\([pnbrqk1-8]+/\\)+[pnbrqk1-8]+\\)[ \t]+" ^
+      "\\(w\\|b\\)[ \t]+\\([kq]+\\|-\\)[ \t]+\\([a-h][1-8]\\|-\\)$" in
+    let fen_re = Str.regexp_case_fold fen_re_string in
+      if Str.string_match fen_re str 0 then
+        let fen_pcs = Str.matched_group 1 str in
+        let fen_color = Str.matched_group 3 str in
+        let fen_castle = Str.matched_group 4 str in
+        let fen_ep = Str.matched_group 5 str in
+        let bits = fen_to_bits fen_pcs in
+        let to_play = fen_to_color fen_color in
+        let cas = fen_to_castle fen_castle in
+        let ep_target = fen_to_pos fen_ep in
+          Some (bits, {to_play = to_play; cas = cas; ep_target = ep_target})
+      else None
+
+  let bits_to_fen bits =
+    let rec bits_to_fen_r str rank file gap =
+      let gap_str = if gap > 0 then string_of_int gap else "" in
+        if file >= 8 && rank <= 0 then
+          str ^ gap_str
+        else if file >= 8 && rank > 0 then
+          map_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
+        else
+          let pos = create_pos rank file in
+            match lookup pos bd with
+              | None ->
+                  map_to_fen_r str rank (file + 1) (gap + 1)
+              | Some pc ->
+                  let c = piece_to_char pc in
+                  let c_str = Char.escaped c in
+                  let new_str = str ^ gap_str ^ c_str in
+                    map_to_fen_r new_str rank (file + 1) 0
+    in map_to_fen_r "" 7 0 0
+    
+  let color_to_fen player =
+    match player with
+      | White _ -> "w"
+      | Black _ -> "b"
+  
+  let castle_to_fen cas =
+    let {wK; wQ; bK; bQ} = cas in
+    let str =
+      (if wK then "K" else "") ^
+      (if wQ then "Q" else "") ^
+      (if bK then "k" else "") ^
+      (if bQ then "q" else "")
+    in if str = "" then "-" else str
+  
+  
+  let target_to_fen pos =
+    match pos with
+      | None -> "-"
+      | Some pos ->
+          let Pos(rank, file) = pos in
+          let r = Char.chr (rank + 49) in
+          let f = Char.chr (file + 97) in
+            (Char.escaped f) ^ (Char.escaped r)
+  
+  let fen_encode bd =
+    let (_, cfg) = bd in
+    let pcs_fen = bits_to_fen bd in
+    let color_fen = color_to_fen cfg.to_play in
+    let castle_fen = castle_to_fen cfg.cas in
+    let ep_fen = target_to_fen cfg.ep_target in
+      pcs_fen ^ " " ^ color_fen ^ " " ^ castle_fen ^ " " ^ ep_fen
+
+  let to_play bd = (snd bd).to_play
+
+  let all_pieces bd =
+
+  let all_moves bd =
+
+  let play bd mv =
+
+  let check bd =
+
+  let checkmate bd =
 end
 
 module StdBoard : BOARD = MapBoard
