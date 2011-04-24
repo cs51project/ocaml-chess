@@ -24,12 +24,13 @@ struct
     then raise Bad_op
     else
       let do_row r =
+(* what is x in the anonymous function? *)
         Array.fold_left (+.) 0 (Array.mapi (fun j m_ij -> x *. v.(j)) r)
       in Array.map do_row m
 
   let sub v w = Array.mapi (fun i v_i -> v_i -. w.(i)) v
   
-  let norm v = sqrt (Array.fold_left (fun r x -> x *. x +. r))
+  let norm v = sqrt (Array.fold_left (fun r x -> x *. x +. r)) v
   
   let rms v = norm v /. sqrt (Array.length v)
 
