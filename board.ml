@@ -395,7 +395,7 @@ struct
   let in_check pos bd =
     let under_attack prev move =
       match move with
-        | Standard (_, pos2) -> pos2 = pos || prev
+        | Standard (_, pos2) -> (pos2 = pos) || prev
         | Castle _ -> false
     in
       List.fold_left under_attack false (generate_without_castles (flip bd))
@@ -406,22 +406,21 @@ struct
     let (_, cfg) = bd in
     let cas = cfg.cas in
     let to_play = cfg.to_play in
-    let flipped = flip bd in
       match (to_play, ctl) with
         | (White _, Kingside) ->
-            cas.wK && clear_of_check flipped
+            cas.wK && clear_of_check bd
               (create_pos 0 4) (create_pos 0 6) &&
             unobstructed bd (create_pos 0 4) (create_pos 0 7)
         | (White _, Queenside) ->
-            cas.wQ && clear_of_check flipped
+            cas.wQ && clear_of_check bd
               (create_pos 0 4) (create_pos 0 2) &&
             unobstructed bd (create_pos 0 0) (create_pos 0 4)
         | (Black _, Kingside) ->
-            cas.bK && clear_of_check flipped
+            cas.bK && clear_of_check bd
               (create_pos 7 4) (create_pos 7 6) &&
             unobstructed bd (create_pos 7 4) (create_pos 7 7)
         | (Black _, Queenside) ->
-            cas.bQ && clear_of_check flipped
+            cas.bQ && clear_of_check bd
               (create_pos 7 4) (create_pos 7 2) &&
             unobstructed bd (create_pos 7 0) (create_pos 7 4)
 
