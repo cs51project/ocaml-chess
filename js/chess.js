@@ -273,8 +273,8 @@ function handleDragOver(evt)
 
 function handleDrop(elt, evt)
 {
-    var sq1 = evt.dataTransfer.getData("text/plain");
-    var sq2 = elt.id;
+    var sq1 = evt.dataTransfer.getData("text/plain").toLowerCase();
+    var sq2 = elt.id.toLowerCase();
     var moveText = "";
     // check for castling!!!
     if(sq1 === "e1" || sq1 === "e8")
@@ -286,8 +286,14 @@ function handleDrop(elt, evt)
     }
     else
         moveText = sq1 + sq2;
+<<<<<<< HEAD
     submitMove(moveText);
     //submitMoveAgainstSelf(moveText);
+=======
+    
+    //submitMove(moveText);
+    submitMoveAgainstSelf(moveText);
+>>>>>>> 340d748d079eea84d0bc8c7a2e9c0f65588277a7
 }
 
 // load and display a board
