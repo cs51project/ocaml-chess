@@ -522,6 +522,11 @@ struct
             else cas
         | _ -> cas
 
+  let is_pawn pc =
+    match pc with
+      | White Pawn | Black Pawn -> true
+      | _ -> false
+
   let handle_std bd pc pos1 pos2 =
     let (map, {to_play; cas; ep_target}) = bd in
     let new_target = determine_target pc pos1 pos2 in
@@ -529,10 +534,17 @@ struct
     let new_cfg = {to_play; cas = new_cas; ep_target = new_target} in
     let tmp = PositionMap.add pos2 pc map in
     let prelim = PositionMap.remove pos1 tmp in
-      if ep_target = Some pos2 then
+      if is_pawn pc && ep_target = Some pos2 then
         let (Pos(r1, _), Pos(_, f2)) = (pos1, pos2) in
         let ep_rem = create_pos r1 f2 in
           Some (PositionMap.remove ep_rem prelim, new_cfg)
+      else if is_pawn pc then
+        let Pos(r2, _) = pos2 in
+          match pc with
+            | White _ ->
+                if r2 = 7 then Some (PositionMap.add pos2 (White Queen) prelim)
+            | Black _ ->
+                if r2 = 0 then Some (PositionMap.add pos2 (Black Queen) prelim)
       else Some (prelim, new_cfg)
 
   let check bd =
