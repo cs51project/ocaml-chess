@@ -32,6 +32,7 @@ sig
   val strat : evaluator -> board -> move option
 end
 
+
 module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
@@ -58,9 +59,9 @@ struct
   let init_eval bd =
     let pcs = B.all_pieces bd in
     let pc_dir pc =
-      match (pc, B.to_play bd) with
-        | (B.Black _, B.White _) | (B.White _, B.Black _) -> -1
-        | (B.White _, B.White _) | (B.Black _, B.Black _) -> 1 in
+      match pc with
+        | B.Black _ -> -1
+        | B.White _ -> 1 in
     let pc_val pc =
       (match pc with
          | B.Black B.Pawn | B.White B.Pawn -> 1
@@ -68,13 +69,15 @@ struct
          | B.Black B.Bishop | B.White B.Bishop -> 3
          | B.Black B.Rook | B.White B.Rook -> 5
          | B.Black B.Queen | B.White B.Queen -> 9
-         | B.Black B.King | B.White B.King -> 1000
-      ) * pc_dir pc * pc_dir (B.to_play bd)
-    in
+         | B.Black B.King | B.White B.King -> 10000
+      ) * pc_dir pc * pc_dir (B.to_play bd) in 
+	let ck = if (B.check bd) then -1 else 0 in
+	let ckmt = if (B.checkmate bd) then -10000 else 0 in
     let eval_binding r (_, pc) = r + pc_val pc in
-      Finite (List.fold_left eval_binding 0 pcs)
+      Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
   let train eval = eval
 end
+
 
 (* an engine using minimax search based on an evaluator *)
 module MinimaxEngine (B : BOARD)
