@@ -103,13 +103,16 @@ let submit_move board_fen move_str =
                 let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
                 let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
                   match (pos1, pos2) with
-                    | (None, _) | (_, None) -> "false"
+                    | (None, _) | (_, None) -> None
                     | (Some pos1, Some pos2) ->
-                        StdBoard.Standard(pos1, pos2)
+                        Some (StdBoard.Standard(pos1, pos2))
             in
-              match StdBoard.play board move with
+              match move with
                 | None -> "false"
-                | Some new_board -> StdBoard.fen_encode new_board
+                | Some move ->
+                    match StdBoard.play board move with
+                      | None -> "false"
+                      | Some new_board -> StdBoard.fen_encode new_board
 
 (* Given a requested path, return the corresponding local path *)
 let local_path qs =

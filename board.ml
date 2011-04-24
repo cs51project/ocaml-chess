@@ -586,6 +586,7 @@ struct
     if not (check bd) then false
     else all_moves bd = []
 end
+
 (*
 module BitBoard : BOARD =
 struct
@@ -786,7 +787,6 @@ struct
 
   let checkmate bd =
 end
-
 *)
 
 module StdBoard : BOARD = MapBoard
