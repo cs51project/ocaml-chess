@@ -5,7 +5,7 @@ sig
   type t
   val create : int -> int -> int -> t
   val eval : t -> input -> output
-  val train : t -> input list -> output list -> t 
+  val train : t -> input list -> output list -> t
 end
 
 (* feedforward neural network trained via backpropagation *)
@@ -61,26 +61,26 @@ struct
     let o2 = Array.map (Array.map (fun f -> f 1)) box2 in
       {o1; o2}
   
-  let feed_forward net data =
-    let o1 = vector_sigmoid (matrix_mul net.w1 data) in 
-    let o2 = vector_sigmoid (matrix_mul net.w2 o1) in (o1, o2)
+  let feed_forward nn data =
+    let o1 = vector_sigmoid (matrix_mul nn.w1 data) in 
+    let o2 = vector_sigmoid (matrix_mul nn.w2 o1) in (o1, o2)
 
-  let eval net data =
-    snd (feed_forward net data)
+  let eval nn data =
+    snd (feed_forward nn data)
 
-  let backprop net sample expected =
-    let (o1, o2) = feed_forward net sample in
+  let backprop nn sample expected =
+    let (o1, o2) = feed_forward nn sample in
     let err = sub expected o2 in
     let d2 = Array.map (fun x -> (1 -. x *. x) /.2) o2 in
     let delta2 = (mul_comps d2 err) in
     let d1 = Array.map (fun x -> (1 -. x *. x) /.2) o1 in
-    let delta1 = (mul_comps d2 (matrix_mul_left delta2 net.w2)) in
+    let delta1 = (mul_comps d2 (matrix_mul_left delta2 nn.w2)) in
     let w2' = Array.mapi (fun i w2_i -> Array.mapi (fun j w2_ij -> w2_ij -.
-      (o1.(j) *. delta2.(i))) w2_i) net.w2 in
+      (o1.(j) *. delta2.(i))) w2_i) nn.w2 in
     let w1' = Array.mapi (fun i w1_i -> Array.mapi (fun j w1_ij -> w1_ij -.
-      (sample.(j) *. delta1.(i))) w1_i) net.w1
+      (sample.(j) *. delta1.(i))) w1_i) nn.w1
     in {w1; w2}
 
-  let train net inputs outputs =
-    List.fold_left2 backprop net inputs outputs
+  let train nn inputs outputs =
+    List.fold_left2 backprop nn inputs outputs
 end
