@@ -303,7 +303,7 @@ struct
         | Some nb ->
             nb = pos2 || (not (occup nb bd) && clear_path occup bd nb pos2)
 
-  let rec unobstructed = clear_path occupied
+  let unobstructed = clear_path occupied
 
   let crawl vectors limit bd pos pc =
     let rec crawl_r cursors squares iter =
