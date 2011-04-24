@@ -291,7 +291,7 @@ struct
         else gcd r a
     in
     let (dr, df) = vector pos1 pos2 in
-      if dr = 0 and df = 0 then (0, 0)
+      if dr = 0 && df = 0 then (0, 0)
       else if dr = 0 then (0, df / (abs df))
       else if df = 0 then (dr / (abs dr), 0)
       else let m = gcd (abs dr) (abs df) in (dr / m, df / m)
