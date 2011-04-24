@@ -398,7 +398,8 @@ struct
         | Standard (_, pos2) -> (pos2 = pos) || prev
         | Castle _ -> false
     in
-      List.fold_left under_attack false (generate_without_castles (flip bd))
+    let opponent_moves = generate_without_castles (flip bd) in
+      List.fold_left under_attack false opponent_moves
 
   let rec clear_of_check = clear_path in_check
 
