@@ -39,7 +39,7 @@ struct
   let inner v w = Array.fold_left (+.) 0.0 (mul_comps v w)
   
   let quad_norm v =
-    Array.fold_left (fun r x -> (x *. x /. 2.0) +. r) 0.0 v
+    Array.fold_left ((fun r x -> x *. x +. r) 0.0 v) /. 2.0
 
   let sigmoid x = tanh (x /. 2.0)
 
@@ -48,6 +48,7 @@ struct
   (* m : MxN; v : Nx1 *)
   let matrix_mul_r m v = Array.map (inner v) m
   
+  (* v : 1xM; m : MxN *)
   let matrix_mul_l v m =
     let rows = Array.mapi (fun i m_i -> scalar_mul m_i v.(i)) m in
       Array.fold_left add (zero (Array.length m.(0))) rows
@@ -68,6 +69,7 @@ struct
   let eval nn data =
     snd (feed_forward nn data)
 
+  (* SEE R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996 *)
   let backprop rate nn (sample, expected) =
     let (o1, o2) = feed_forward nn sample in
     let err = sub o2 expected in

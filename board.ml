@@ -721,17 +721,18 @@ struct
         if file >= 8 && rank <= 0 then
           str ^ gap_str
         else if file >= 8 && rank > 0 then
-          map_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
+          bits_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
         else
           let pos = create_pos rank file in
+          let ascii = (logor pos bits.(0))
             match lookup pos bd with
               | None ->
-                  map_to_fen_r str rank (file + 1) (gap + 1)
+                  bits_to_fen_r str rank (file + 1) (gap + 1)
               | Some pc ->
                   let c = piece_to_char pc in
                   let c_str = Char.escaped c in
                   let new_str = str ^ gap_str ^ c_str in
-                    map_to_fen_r new_str rank (file + 1) 0
+                    bits_to_fen_r new_str rank (file + 1) 0
     in map_to_fen_r "" 7 0 0
     
   let color_to_fen player =
