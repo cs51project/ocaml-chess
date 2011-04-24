@@ -286,8 +286,8 @@ function handleDrop(elt, evt)
     }
     else
         moveText = sq1 + sq2;
-    //submitMove(moveText);
-    submitMoveAgainstSelf(moveText);
+    submitMove(moveText);
+    //submitMoveAgainstSelf(moveText);
 }
 
 // load and display a board
