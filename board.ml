@@ -438,7 +438,7 @@ struct
 
   let is_valid_knight bd move dir =
     let (pos1, pos2) = move in
-    let (dr, df) = vector pos1 pos2 in
+    let (dr, df) = unit_vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
     let pattern = (dR, dF) = (1, 2) || (dR, dF) = (2, 1) in
       match lookup pos2 bd with
@@ -447,7 +447,7 @@ struct
 
   let is_valid_bishop bd move dir =
     let (pos1, pos2) = move in
-    let (dr, df) = vector pos1 pos2 in
+    let (dr, df) = unit_vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
     let pattern = dR = dF && unobstructed bd pos1 pos2 in
       match lookup pos2 bd with
@@ -456,7 +456,7 @@ struct
 
   let is_valid_rook bd move dir =
     let (pos1, pos2) = move in
-    let (dr, df) = vector pos1 pos2 in
+    let (dr, df) = unit_vector pos1 pos2 in
     let (dR, dF) = (abs dr, abs df) in
     let pattern =
       dR = 0 || dF = 0 && unobstructed bd pos1 pos2
@@ -483,7 +483,7 @@ struct
       | Bishop -> is_valid_bishop
       | Rook -> is_valid_rook
       | Queen -> is_valid_queen 
-      | King -> is_valid_queen
+      | King -> is_valid_king
 
   let is_valid bd move =
     match move with
@@ -615,9 +615,14 @@ struct
     let cas = {wK = true; wQ = true; bK = true; bQ = true} in
       (init_bits, {to_play = White King; ep_target = None; cas = cas})
 
+  let in_bounds rank file =
+    (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7)
+  
   let create_pos rank file =
-    let bit_index = rank * 8 + file in
-      Int64.shift_left 1L bit_index
+    if in_bounds rank file then
+      let bit_index = rank * 8 + file in
+        Int64.shift_left 1L bit_index
+    else raise InvalidPosition
 
   let fen_to_pos =
     if str = "-" || String.length str != 2 then None
@@ -715,6 +720,9 @@ struct
           Some (bits, {to_play = to_play; cas = cas; ep_target = ep_target})
       else None
 
+  let index_to_ascii i =
+    (land i 0) * 
+
   let bits_to_fen bits =
     let rec bits_to_fen_r str rank file gap =
       let gap_str = if gap > 0 then string_of_int gap else "" in
@@ -723,17 +731,16 @@ struct
         else if file >= 8 && rank > 0 then
           bits_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
         else
+          let bit_index = rank * 8 + file in
           let pos = create_pos rank file in
-          let ascii = (logor pos bits.(0))
-            match lookup pos bd with
-              | None ->
-                  bits_to_fen_r str rank (file + 1) (gap + 1)
-              | Some pc ->
-                  let c = piece_to_char pc in
-                  let c_str = Char.escaped c in
-                  let new_str = str ^ gap_str ^ c_str in
-                    bits_to_fen_r new_str rank (file + 1) 0
-    in map_to_fen_r "" 7 0 0
+          let field_to_ascii i field =
+            let bit = Int64.shift_right (Int64.logand pos field) bit_index in
+            let ascii = (Int64.to_int bit) * (index_to_ascii i)
+          let ascii = Array.fold_left (fun a f -> a + field_to_ascii f) 0 bits in
+          let c_str = Char.escaped (Char.chr ascii)
+          let new_str = str ^ gap_str ^ c_str in
+            bits_to_fen_r new_str rank (file + 1) 0
+    in bits_to_fen_r "" 7 0 0
     
   let color_to_fen player =
     match player with
