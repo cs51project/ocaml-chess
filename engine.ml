@@ -53,7 +53,7 @@ struct
     match a with
       | Inf -> NInf
       | NInf -> Inf
-      | Finite a -> Finite (-a)
+      | Finite a -> Finite (-.a)
   let apply eval bd = eval bd
   let init_eval bd =
     let pcs = B.all_pieces bd in

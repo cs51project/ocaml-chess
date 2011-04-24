@@ -1,4 +1,4 @@
-module type NN =
+(* module type NN =
 sig
   type input = float array
   type output = float array
@@ -86,3 +86,4 @@ struct
   let train nn patterns =
     List.fold_left (backprop 0.1) nn patterns
 end
+*)
