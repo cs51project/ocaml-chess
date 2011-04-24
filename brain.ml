@@ -39,7 +39,7 @@ struct
   let inner v w = Array.fold_left (+.) 0.0 (mul_comps v w)
   
   let quad_norm v =
-    Array.fold_left ((fun r x -> x *. x +. r) 0.0 v) /. 2.0
+    (Array.fold_left (fun r x -> x *. x +. r) 0.0 v) /. 2.0
 
   let sigmoid x = tanh (x /. 2.0)
 
