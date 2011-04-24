@@ -459,7 +459,7 @@ struct
     let (pos1, pos2) = move in
     let (dr, df) = unit_vector pos1 pos2 in
     let pattern =
-      dr = 0 || df = 0 && unobstructed bd pos1 pos2
+      (dr = 0 || df = 0) && unobstructed bd pos1 pos2
     in
       match lookup pos2 bd with
         | None -> pattern
