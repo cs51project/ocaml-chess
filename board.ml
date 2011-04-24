@@ -291,8 +291,8 @@ struct
         else gcd r a
     in
     let (dr, df) = vector pos1 pos2 in
-    if dr = 0 then (0, 1)
-    else if df = 0 then (1, 0)
+    if dr = 0 then (0, df / (abs df))
+    else if df = 0 then (dr / (abs dr), 0)
     else let m = gcd (abs dr) (abs df) in (dr / m, df / m)
     
 
@@ -457,9 +457,8 @@ struct
   let is_valid_rook bd move dir =
     let (pos1, pos2) = move in
     let (dr, df) = unit_vector pos1 pos2 in
-    let (dR, dF) = (abs dr, abs df) in
     let pattern =
-      dR = 0 || dF = 0 && unobstructed bd pos1 pos2
+      dr = 0 || df = 0 && unobstructed bd pos1 pos2
     in
       match lookup pos2 bd with
         | None -> pattern
