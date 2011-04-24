@@ -106,7 +106,8 @@ struct
       try
         Some (PositionMap.find pos map)
       with Not_found -> None
-    
+  
+  (* Boolean lookup *)  
   let occupied pos board =
     match lookup pos board with
       | Some _ -> true
