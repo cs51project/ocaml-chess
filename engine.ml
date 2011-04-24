@@ -30,7 +30,9 @@ sig
   type move
   type evaluator
   val strat : evaluator -> board -> move option
-endmodule SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
+end
+
+module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
   type value = Finite of float | Inf | NInf
