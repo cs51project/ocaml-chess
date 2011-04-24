@@ -32,7 +32,6 @@ sig
   val strat : evaluator -> board -> move option
 end
 
-
 module SimpleEval (B : BOARD) : (EVAL with type board = B.board) =
 struct
   type board = B.board
@@ -64,15 +63,15 @@ struct
         | B.White _ -> 1 in
     let pc_val pc =
       (match pc with
-         | B.Black B.Pawn | B.White B.Pawn -> 1
-         | B.Black B.Knight | B.White B.Knight -> 3
-         | B.Black B.Bishop | B.White B.Bishop -> 3
-         | B.Black B.Rook | B.White B.Rook -> 5
-         | B.Black B.Queen | B.White B.Queen -> 9
+         | B.Black B.Pawn | B.White B.Pawn -> 10
+         | B.Black B.Knight | B.White B.Knight -> 30
+         | B.Black B.Bishop | B.White B.Bishop -> 30
+         | B.Black B.Rook | B.White B.Rook -> 50
+         | B.Black B.Queen | B.White B.Queen -> 90
          | B.Black B.King | B.White B.King -> 10000
-      ) * pc_dir pc * pc_dir (B.to_play bd) in 
-	let ck = if (B.check bd) then -1 else 0 in
-	let ckmt = if (B.checkmate bd) then -10000 else 0 in
+      ) * pc_dir pc * pc_dir (B.to_play bd) in
+let ck = if (B.check bd) then -5 else 0 in
+let ckmt = if (B.checkmate bd) then -10000 else 0 in
     let eval_binding r (_, pc) = r + pc_val pc in
       Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
   let train eval = eval
