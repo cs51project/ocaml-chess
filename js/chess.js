@@ -277,7 +277,7 @@ function handleDrop(elt, evt)
     var sq2 = elt.id;
     var moveText = "";
     // check for castling!!!
-    if(sq1 = "e1" || sq1 = "e8")
+    if(sq1 === "e1" || sq1 === "e8")
     {
         if(sq2.charAt(0) === 'c')
             moveText = "OOO";
