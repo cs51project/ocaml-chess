@@ -542,9 +542,13 @@ struct
         let Pos(r2, _) = pos2 in
           match pc with
             | White _ ->
-                if r2 = 7 then Some (PositionMap.add pos2 (White Queen) prelim)
+                if r2 = 7 then
+                  Some (PositionMap.add pos2 (White Queen) prelim, new_cfg)
+                else Some (prelim, new_cfg)
             | Black _ ->
-                if r2 = 0 then Some (PositionMap.add pos2 (Black Queen) prelim)
+                if r2 = 0 then
+                  Some (PositionMap.add pos2 (Black Queen) prelim, new_cfg)
+                else Some(prelim, new_cfg)
       else Some (prelim, new_cfg)
 
   let check bd =
