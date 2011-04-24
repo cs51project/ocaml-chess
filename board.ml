@@ -19,7 +19,10 @@ sig
    * raises InvalidPosition
    *)
   val create_pos : int -> int -> position
-  
+
+  (* converts back from a position to a tuple of integers *)
+  val get_pos : position -> int * int
+
   (* convert from FEN position to position *)
   val fen_to_pos : string -> position option
   
@@ -52,7 +55,7 @@ end
 
 module MapBoard : BOARD =
 struct
-  type position = Pos of int * int
+  type position = Pos of int * int;;
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type color = piece
@@ -82,6 +85,8 @@ struct
   let create_pos rank file =
     if in_bounds rank file then Pos (rank, file)
     else raise InvalidPosition
+
+  let get_pos pos = let Pos(rank,file) = pos in (rank,file)
 
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
