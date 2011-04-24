@@ -197,7 +197,7 @@ function urlEncode(str)
     return str.replace(/[ \n\t]+/g, "+");
 }
 
-function handleBoard(response)
+function handleSubmitResponse(response)
 {
     if(response !== "false")
     {
@@ -206,7 +206,13 @@ function handleBoard(response)
     }
 }
 
-function handleBoardDemo(response)
+function handleResponseNoFollowup(response)
+{
+    if(response !== "false")
+        loadBoard(new Board(response));
+}
+
+function handleResponseDemo(response)
 {
     if(response !== "false")
     {
@@ -215,26 +221,20 @@ function handleBoardDemo(response)
     }
 }
 
-function handleBoardAgainstSelf(response)
-{
-    if(response !== "false")
-        loadBoard(new Board(response));
-}
-
 /* Submit a move to the server via AJAX.
  */
 function submitMove(move)
 {   
     var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
-    return sendAJAX(request, handleBoard);
+    return sendAJAX(request, handleSubmitResponse);
 }
 
 function submitMoveAgainstSelf(move)
 {   
     var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
-    return sendAJAX(request, handleBoardAgainstSelf);
+    return sendAJAX(request, handleBoardNoFollowup);
 }
 
 /* Request the board from the server.
@@ -244,21 +244,14 @@ function submitMoveAgainstSelf(move)
 function requestMove()
 {
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
-    return sendAJAX(request, handleBoard);
+    return sendAJAX(request, handleRequestResponse);
 }
 
 function requestMoveDemo()
 {
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
-    return sendAJAX(request, handleBoardDemo);
+    return sendAJAX(request, handleResponseDemo);
 }
-
-function requestMoveAgainstMachine()
-{
-    var request = "q=request_move&board=" + urlEncode(board.toFEN());
-    return sendAJAX(request, handleBoard);
-}
-
 
 function handleDragStart(evt)
 {
@@ -293,7 +286,8 @@ function handleDrop(elt, evt)
     }
     else
         moveText = sq1 + sq2;
-    submitMove(moveText);
+    //submitMove(moveText);
+    submitMoveAgainstSelf(moveText);
 }
 
 // load and display a board
