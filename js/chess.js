@@ -200,21 +200,25 @@ function urlEncode(str)
 function handleBoard(response)
 {
     if(response !== "false")
+    {
         loadBoard(new Board(response));
+        requestMove();
+    }
 }
 
 function handleBoardDemo(response)
 {
     if(response !== "false")
+    {
         loadBoard(new Board(response));
-    requestMoveDemo();
+        requestMoveDemo();
+    }
 }
 
-function handleBoardAgainstMachine(response)
+function handleBoardAgainstSelf(response)
 {
     if(response !== "false")
         loadBoard(new Board(response));
-    requestMoveAgainstMachine();
 }
 
 /* Submit a move to the server via AJAX.
@@ -226,11 +230,11 @@ function submitMove(move)
     return sendAJAX(request, handleBoard);
 }
 
-function submitMoveAgainstMachine(move)
+function submitMoveAgainstSelf(move)
 {   
     var request = "q=submit_move&board=" + urlEncode(board.toFEN()) +
                   "&move=" + urlEncode(move);
-    return sendAJAX(request, handleBoardAgainstMachine);
+    return sendAJAX(request, handleBoardAgainstSelf);
 }
 
 /* Request the board from the server.

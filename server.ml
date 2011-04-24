@@ -97,8 +97,10 @@ let submit_move board_fen move_str =
           if not (Str.string_match move_re move_str 0) then "false"
           else 
             let move =
-              if move_str = "OOO" then StdBoard.Castle StdBoard.Queenside
-              else if move_str = "OO" then StdBoard.Castle StdBoard.Kingside
+              if move_str = "OOO" then
+                Some (StdBoard.Castle StdBoard.Queenside)
+              else if move_str = "OO" then
+                Some (StdBoard.Castle StdBoard.Kingside)
               else
                 let pos1 = StdBoard.fen_to_pos (Str.matched_group 1 move_str) in
                 let pos2 = StdBoard.fen_to_pos (Str.matched_group 2 move_str) in
