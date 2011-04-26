@@ -39,6 +39,60 @@ struct
   type evaluator = board -> value
   let ubound = Inf
   let lbound = NInf
+ (* Creates tables for evaluation lookups *)
+  let pawn_table = [|[|  0;  0;  0;  0;  0;  0;  0;  0|]; 
+                     [|  5; 10; 10;-25;-25; 10; 10;  5|];
+		     [|  5; -5;-10;  0;  0;-10; -5;  5|];
+		     [|  0;  0;  0; 25; 25;  0;  0;  0|];
+		     [|  5;  5; 10; 27; 27; 10;  5;  5|];
+		     [| 10; 10; 20; 30; 30; 20; 10; 10|];
+		     [| 50; 50; 50; 50; 50; 50; 50; 50|];
+		     [|  0;  0;  0;  0;  0;  0;  0;  0|]|]
+
+  let knight_table=[|[|-50;-40;-20;-30;-30;-20;-40;-50|]; 
+                     [|-40;-20;  0;  5;  5;  0;-20;-40|];
+		     [|-30;  5; 10; 15; 15; 10;  5;-30|];
+		     [|-30;  0; 15; 20; 20; 15;  0;-30|];
+		     [|-30;  5; 15; 20; 20; 15;  5;-30|];
+		     [|-30;  0; 10; 15; 15; 10;  0;-30|];
+		     [|-40;-20;  0;  0;  0;  0;-20;-40|];
+		     [|-50;-40;-30;-30;-30;-30;-40;-50|]|]
+
+  let bishop_table=[|[|-20;-10;-40;-10;-10;-40;-10;-20|]; 
+                     [|-10;  5;  0;  0;  0;  0;  5;-10|];
+		     [|-10; 10; 10; 10; 10; 10; 10;-10|];
+		     [|-10;  0; 10; 10; 10; 10;  0;-10|];
+		     [|-10;  5;  5; 10; 10;  5;  5;-10|];
+		     [|-10;  0;  5; 10; 10;  5;  0;-10|];
+		     [|-10;  0;  0;  0;  0;  0;  0;-10|];
+		     [|-20;-10;-10;-10;-10;-10;-10;-20|]|]
+
+  let king_table=king_table = [|
+  [|20;  30;  10;   0;   0;  10;  30;  20|]
+  [|20;  20;   0;   0;   0;   0;  20;  20|]    
+ [|-10; -20; -20; -20; -20; -20; -20; -10|]   
+ [|-20; -30; -30; -40; -40; -30; -30; -20|]
+ [|-30; -40; -40; -50; -50; -40; -40; -30|]   
+ [|-30; -40; -40; -50; -50; -40; -40; -30|]
+ [|-30; -40; -40; -50; -50; -40; -40; -30|]   
+ [|-30; -40; -40; -50; -50; -40; -40; -30|]|]
+
+  let get_table pct = 
+    match pct with
+      | B.Pawn ->  pawn_table
+      | B.Knight ->knight_table
+      | B.Bishop ->bishop_table
+      | B.Rook   ->pawn_table
+      | B.Queen  ->pawn_table
+      | B.King   ->king_table
+
+    
+  let value_of_pos pos pc = 
+    let (rank,file) = B.get_pos pos in
+    match pc with
+      | B.Black pt -> (get_table pt).(rank).(file)
+      | B.White pt -> (get_table pt).(7-rank).(7-file)
+
   let comp a b =
     match (a, b) with
       | (Inf, Inf) | (NInf, NInf) -> Order.Equal
@@ -63,16 +117,16 @@ struct
         | B.White _ -> 1 in
     let pc_val pc =
       (match pc with
-         | B.Black B.Pawn | B.White B.Pawn -> 10
-         | B.Black B.Knight | B.White B.Knight -> 30
-         | B.Black B.Bishop | B.White B.Bishop -> 30
-         | B.Black B.Rook | B.White B.Rook -> 50
-         | B.Black B.Queen | B.White B.Queen -> 90
-         | B.Black B.King | B.White B.King -> 10000
+         | B.Black B.Pawn | B.White B.Pawn -> 100
+         | B.Black B.Knight | B.White B.Knight -> 320
+         | B.Black B.Bishop | B.White B.Bishop -> 325
+         | B.Black B.Rook | B.White B.Rook -> 500
+         | B.Black B.Queen | B.White B.Queen -> 975
+         | B.Black B.King | B.White B.King -> 32767
       ) * pc_dir pc * pc_dir (B.to_play bd) in
 let ck = if (B.check bd) then -5 else 0 in
-let ckmt = if (B.checkmate bd) then -10000 else 0 in
-    let eval_binding r (_, pc) = r + pc_val pc in
+let ckmt = if (B.checkmate bd) then -100000 else 0 in
+    let eval_binding r (pos, pc) = r + (pc_val pc) + (value_of_pos pos pc) in
       Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
   let train eval = eval
 end
