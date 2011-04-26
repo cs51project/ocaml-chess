@@ -55,7 +55,7 @@ end
 
 module MapBoard : BOARD =
 struct
-  type position = Pos of int * int;;
+  type position = Pos of int * int
   type piece_type = Pawn | Knight | Bishop | Rook | Queen | King
   type piece = Black of piece_type | White of piece_type
   type color = piece
