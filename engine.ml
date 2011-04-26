@@ -39,7 +39,8 @@ struct
   type evaluator = board -> value
   let ubound = Inf
   let lbound = NInf
- (* Creates tables for evaluation lookups *)
+  
+ (* Tables for evaluation lookups *)
   let pawn_table =
   [|
     [| 0;  0;   0;   0;   0;   0;   0;  0|]; 
