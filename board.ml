@@ -604,7 +604,7 @@ struct
     else all_moves bd = []
 end
 
-(*
+
 module BitBoard : BOARD =
 struct
   type bitmask = int64
@@ -620,15 +620,29 @@ struct
   type board = (bitmask array) * board_config
   exception InvalidPosition
   
+  (**************** simpler bitwise notation ****************)
+  let ($&$) = Int64.logand
+  let ($|$) = Int64.logor
+  let ($^$) = Int64.logxor
+  let ($>>$) = Int64.shift_right
+  let ($<<$) = Int64.shift_left
+  (**********************************************************)
+  
   let init_board =
     let init_bits =
       [|
-        0x000000000000ff00; 0x00ff000000000000; (* pawns *)
-        0x0000000000000042; 0x4200000000000000; (* knights *)
-        0x0000000000000024; 0x2400000000000000; (* bishops *)
-        0x0000000000000081; 0x8100000000000000; (* rooks *)
-        0x0000000000000010; 0x1000000000000000; (* queens *)
-        0x0000000000000008; 0x0800000000000000
+        0x000000000000FF00L;  (* white pawns *)
+        0x0000000000000042L;  (* white knights *)
+        0x0000000000000024L;  (* white bishops *)
+        0x0000000000000081L;  (* white rooks *)
+        0x0000000000000010L;  (* white queen *)
+        0x0000000000000008L;  (* white king *)
+        0x00FF000000000000L;  (* black pawns *)
+        0x4200000000000000L;  (* black knights *)
+        0x2400000000000000L;  (* black bishops *)
+        0x8100000000000000L;  (* black rooks *)
+        0x1000000000000000L;  (* black queen *)
+        0x0800000000000000L   (* black king *)
       |] in
     let cas = {wK = true; wQ = true; bK = true; bQ = true} in
       (init_bits, {to_play = White King; ep_target = None; cas = cas})
@@ -639,7 +653,7 @@ struct
   let create_pos rank file =
     if in_bounds rank file then
       let bit_index = rank * 8 + file in
-        Int64.shift_left 1L bit_index
+        1L $<<$ bit_index
     else raise InvalidPosition
 
   let fen_to_pos =
@@ -655,17 +669,30 @@ struct
   let piece_to_index pc =
     match pc with
       | White Pawn -> 0
-      | Black Pawn -> 1
-      | White Knight -> 2
-      | Black Knight -> 3
-      | White Bishop -> 4
-      | Black Bishop -> 5
-      | White Rook -> 6
-      | Black Rook -> 7
-      | White Queen -> 8
-      | Black Queen -> 9
-      | White King -> 10
+      | White Knight -> 1
+      | White Bishop -> 2
+      | White Rook -> 3
+      | White Queen -> 4
+      | White King -> 5
+      | Black Pawn -> 6
+      | Black Knight -> 7
+      | Black Bishop -> 8
+      | Black Rook -> 9
+      | Black Queen -> 10
       | Black King -> 11
+
+  let index_to_piece i =
+    try
+      Some
+        ([|
+          White Pawn; White Knight;
+          White Bishop; White Rook;
+          White Queen; White King;
+          Black Pawn; Black Knight;
+          Black Bishop; Black Rook;
+          Black Queen; Black King;
+        |].(i))
+    with Invalid_argument _ -> None
 
   let char_to_piece c =
     let lower_c = Char.lowercase c in
@@ -696,7 +723,7 @@ struct
           else
             let index = piece_to_index (char_to_piece c) in
             let pos = create_pos rank file in
-            let _ = bits.(index) <- Int64.logor bits.(index) pos in
+            let _ = bits.(index) <- bits.(index) $|$ pos in
               fen_to_map_r tail bits rank (file + 1)
     in fen_to_bits_r str (Array.make 12 0L) 7 0
 
@@ -738,8 +765,11 @@ struct
           Some (bits, {to_play = to_play; cas = cas; ep_target = ep_target})
       else None
 
-  let index_to_ascii i =
-    (land i 0) * 
+  let occupied bits rank file piece_index =
+    let pos = create_pos rank file in
+    let bit_index = rank * 8 + file in
+    let masked = pos $&$ bits.(piece_index) in
+      to_int (masked $>>$ bit_index)
 
   let bits_to_fen bits =
     let rec bits_to_fen_r str rank file gap =
@@ -749,15 +779,26 @@ struct
         else if file >= 8 && rank > 0 then
           bits_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
         else
-          let bit_index = rank * 8 + file in
-          let pos = create_pos rank file in
-          let field_to_ascii i field =
-            let bit = Int64.shift_right (Int64.logand pos field) bit_index in
-            let ascii = (Int64.to_int bit) * (index_to_ascii i)
-          let ascii = Array.fold_left (fun a f -> a + field_to_ascii f) 0 bits in
-          let c_str = Char.escaped (Char.chr ascii)
-          let new_str = str ^ gap_str ^ c_str in
-            bits_to_fen_r new_str rank (file + 1) 0
+          let occupied_by = occupied bits rank file in
+          let ascii =
+            0x50 * (occupied_by  0) +   (* 'P' *)
+            0x4E * (occupied_by  1) +   (* 'N' *)
+            0x42 * (occupied_by  2) +   (* 'B' *)
+            0x52 * (occupied_by  3) +   (* 'R' *)
+            0x51 * (occupied_by  4) +   (* 'Q' *)
+            0x4B * (occupied_by  5) +   (* 'K' *)
+            0x70 * (occupied_by  6) +   (* 'p' *)
+            0x6E * (occupied_by  7) +   (* 'n' *)
+            0x62 * (occupied_by  8) +   (* 'b' *)
+            0x72 * (occupied_by  9) +   (* 'r' *)
+            0x71 * (occupied_by 10) +   (* 'q' *)
+            0x6B * (occupied_by 11)     (* 'k' *)
+          in
+            if ascii = 0 then bits_to_fen_r str rank (file + 1) (gap + 1)
+            else
+              let pc_char = Char.chr ascii in
+              let new_str = Printf.sprintf "%s%s%c" str gap_str pc_char in
+                bits_to_fen_r new_str rank (file + 1) 0
     in bits_to_fen_r "" 7 0 0
     
   let color_to_fen player =
@@ -793,8 +834,67 @@ struct
       pcs_fen ^ " " ^ color_fen ^ " " ^ castle_fen ^ " " ^ ep_fen
 
   let to_play bd = (snd bd).to_play
+  
+  let ep_target bd = (snd bd).ep_target
+
+  let piece_at bd rank file =
+    let (bits, _) = bd in
+    let occupied_by = occupied bits rank file in
+    let pass1 = Array.mapi (fun i _ -> (i + 1) * (occupied_by i)) bits in
+      index_to_piece ((Array.fold_left (+) 0 bits) - 1)
 
   let all_pieces bd =
+    let all_pieces_r pcs rank file =
+      if rank >= 8 then pcs
+      else if file >= 8 then all_pieces_r pcs (rank + 1) 0
+      else match piece_at bd rank file with
+        | None -> all_pieces_r pcs rank (file + 1)
+        | Some pc -> all_pieces_r (pc :: pcs) rank (file + 1)
+
+  let all_white bd =
+    let bits = fst bd in
+      Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
+
+  let all_black bd =
+    let bits = fst bd in
+      Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
+
+  let rank_masks =
+    let rank_mask i = 0x00000000000000FFL $<<$ (8 * i) in
+      Array.init 8 rank_mask
+
+  let file_masks =
+    let file_mask i = 0x8080808080808080L $>>$ i in
+      Array.init 8 file_mask
+
+  let diag_masks = 
+    let swne = 0x0102040810204080L in (* Southwest <-> Northeast main diag *)
+    let senw = 0x8040201008040201L in (* Southeast <-> Northwest main diag *)
+      let mask_sw prev n = prev $|$ rank_masks.(n) $|$ file_masks.(n)
+      let mask_ne prev n = prev $|$ rank_masks.()
+      let mask_b n = Array.fold_left ($|$) 0L (Array.sub )
+      
+  let pawn_moves bd pos =
+    let bits = fst bd in
+    let (forward, l_mask, r_mask, start_rank, opp_pcs) =
+      let nlt = Int64.lognot (file_masks.(0)) in
+      let nrt = Int64.lognot (file_masks.(7)) in
+        match to_play bd with
+          | White _ ->
+              (($<<$), nlt, nrt, rank_masks.(1), all_black bd)
+          | Black _ ->
+              (($>>$), nrt, nlt, rank_masks.(6), all_white bd)
+    in
+    let all_pcs = Array.fold_left ($|$) 0L bits in
+    let empty = Int64.lognot all_bits in
+    let fwd_by_one = (forward pos 8) $&$ empty in
+    let virgin = pos $&$ start_rank in
+    let fwd_by_two = forward (empty $&$ (forward virgin 8)) 8 in
+    let attack_l = forward (pos $&$ l_mask) 9 in
+    let attack_r = forward (pos $&$ r_mask) 7 in
+    let targets = opp_pcs $|$ (ep_target bd) in
+    let captures = (attack_l $|$ attack_r) $&$ targets in
+      fwd_by_one $|$ fwd_by_two $|$ captures
 
   let all_moves bd =
 
@@ -802,8 +902,8 @@ struct
 
   let check bd =
 
-  let checkmate bd =
+  let checkmate bd = 
 end
-*)
+
 
 module StdBoard : BOARD = MapBoard
