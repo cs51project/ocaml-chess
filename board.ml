@@ -620,13 +620,13 @@ struct
   type board = (bitmask array) * board_config
   exception InvalidPosition
   
-  (**************** simpler bitwise notation ****************)
+  (**************** bitwise operator notation ****************)
   let ($&$) = Int64.logand
   let ($|$) = Int64.logor
   let ($^$) = Int64.logxor
   let ($>>$) = Int64.shift_right
   let ($<<$) = Int64.shift_left
-  (**********************************************************)
+  (***********************************************************)
   
   let init_board =
     let init_bits =
