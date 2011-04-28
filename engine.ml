@@ -1,4 +1,5 @@
 open Board
+open Brain
 
 module Order =
 struct
@@ -14,8 +15,8 @@ sig
   val lbound : value
   val comp : value -> value -> Order.order
   val negate : value -> value
-  val apply : evaluator -> board -> value
   val init_eval : evaluator (* standard evaluator *)
+  val apply : evaluator -> board -> value
   val train : evaluator -> evaluator (* learning function *)
 end
 
@@ -39,33 +40,55 @@ struct
   type evaluator = board -> value
   let ubound = Inf
   let lbound = NInf
- (* Creates tables for evaluation lookups *)
-  let pawn_table = [|[|  0;  0;  0;  0;  0;  0;  0;  0|]; 
-                     [|  5; 10; 10;-25;-25; 10; 10;  5|];
-		     [|  5; -5;-10;  0;  0;-10; -5;  5|];
-		     [|  0;  0;  0; 25; 25;  0;  0;  0|];
-		     [|  5;  5; 10; 27; 27; 10;  5;  5|];
-		     [| 10; 10; 20; 30; 30; 20; 10; 10|];
-		     [| 50; 50; 50; 50; 50; 50; 50; 50|];
-		     [|  0;  0;  0;  0;  0;  0;  0;  0|]|]
+  
+ (* Tables for evaluation lookups *)
+  let pawn_table =
+  [|
+    [| 0;  0;   0;   0;   0;   0;   0;  0|]; 
+    [| 5; 10;  10; -25; -25;  10;  10;  5|];
+    [| 5; -5; -10;   0;   0; -10;  -5;  5|];
+    [| 0;  0;   0;  25;  25;   0;   0;  0|];
+    [| 5;  5;  10;  27;  27;  10;   5;  5|];
+    [|10; 10;  20;  30;  30;  20;  10; 10|];
+    [|50; 50;  50;  50;  50;  50;  50; 50|];
+    [| 0;  0;   0;   0;   0;   0;   0;  0|]
+  |]
 
-  let knight_table=[|[|-50;-40;-20;-30;-30;-20;-40;-50|]; 
-                     [|-40;-20;  0;  5;  5;  0;-20;-40|];
-		     [|-30;  5; 10; 15; 15; 10;  5;-30|];
-		     [|-30;  0; 15; 20; 20; 15;  0;-30|];
-		     [|-30;  5; 15; 20; 20; 15;  5;-30|];
-		     [|-30;  0; 10; 15; 15; 10;  0;-30|];
-		     [|-40;-20;  0;  0;  0;  0;-20;-40|];
-		     [|-50;-40;-30;-30;-30;-30;-40;-50|]|]
+  let knight_table =
+  [|
+    [|-50; -40; -20; -30; -30; -20; -40; -50|]; 
+    [|-40; -20;   0;   5;   5;   0; -20; -40|];
+    [|-30;   5;  10;  15;  15;  10;   5; -30|];
+    [|-30;   0;  15;  20;  20;  15;   0; -30|];
+    [|-30;   5;  15;  20;  20;  15;   5; -30|];
+    [|-30;   0;  10;  15;  15;  10;   0; -30|];
+    [|-40; -20;   0;   0;   0;   0; -20; -40|];
+    [|-50; -40; -30; -30; -30; -30; -40; -50|]
+  |]
 
-  let bishop_table=[|[|-20;-10;-40;-10;-10;-40;-10;-20|]; 
-                     [|-10;  5;  0;  0;  0;  0;  5;-10|];
-		     [|-10; 10; 10; 10; 10; 10; 10;-10|];
-		     [|-10;  0; 10; 10; 10; 10;  0;-10|];
-		     [|-10;  5;  5; 10; 10;  5;  5;-10|];
-		     [|-10;  0;  5; 10; 10;  5;  0;-10|];
-		     [|-10;  0;  0;  0;  0;  0;  0;-10|];
-		     [|-20;-10;-10;-10;-10;-10;-10;-20|]|]
+  let bishop_table =
+  [|
+    [|-20; -10; -40; -10; -10; -40; -10; -20|]; 
+    [|-10;   5;   0;   0;   0;   0;   5; -10|];
+    [|-10;  10;  10;  10;  10;  10;  10; -10|];
+    [|-10;   0;  10;  10;  10;  10;   0; -10|];
+    [|-10;   5;   5;  10;  10;   5;   5; -10|];
+    [|-10;   0;   5;  10;  10;   5;   0; -10|];
+    [|-10;   0;   0;   0;   0;   0;   0; -10|];
+    [|-20; -10; -10; -10; -10; -10; -10; -20|]
+  |]
+
+  let king_table=king_table =
+  [|
+    [| 20;  30;  10;   0;   0;  10;  30;  20|];
+    [| 20;  20;   0;   0;   0;   0;  20;  20|];
+    [|-10; -20; -20; -20; -20; -20; -20; -10|];
+    [|-20; -30; -30; -40; -40; -30; -30; -20|];
+    [|-30; -40; -40; -50; -50; -40; -40; -30|];
+    [|-30; -40; -40; -50; -50; -40; -40; -30|];
+    [|-30; -40; -40; -50; -50; -40; -40; -30|];
+    [|-30; -40; -40; -50; -50; -40; -40; -30|]
+  |]
 
   let get_table pct = 
     match pct with
@@ -74,7 +97,7 @@ struct
       | B.Bishop ->bishop_table
       | B.Rook   ->pawn_table
       | B.Queen  ->pawn_table
-      | B.King   ->pawn_table
+      | B.King   ->king_table
 
     
   let value_of_pos pos pc = 
@@ -121,6 +144,23 @@ let ckmt = if (B.checkmate bd) then -100000 else 0 in
   let train eval = eval
 end
 
+module NNEval (B : BOARD) (N : NN) : (EVAL with type board = B.board) =
+struct
+  type board = B.board
+  type value = float
+  type evaluator = NN.t
+  let ubound = infinity
+  let lbound = neg_infinity
+  let comp a b =
+    let result = compare a b in
+      if result < 0 then Order.Less
+      else if result = 0 then Order.Equal
+      else Order.Greater
+  let negate = ( *. ) (-1.0)
+  let init_eval =
+  let apply =
+  let train =
+end
 
 (* an engine using minimax search based on an evaluator *)
 module MinimaxEngine (B : BOARD)

@@ -234,7 +234,8 @@ let process_request client_fd request =
     else send_all client_fd fail_header
 ;;
 
-(* The server loop, adapted from moogle. *)
+(* The server loop, adapted from moogle (and see e.g.,
+ * http://caml.inria.fr/pub/docs/oreilly-book/html/book-ora187.html). *)
 let server () = 
   let fd = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
   let sock_addr = Unix.ADDR_INET (Unix.inet_addr_any, server_port) in
@@ -244,23 +245,19 @@ let server () =
   (* loop on a set of client-server games *)
   let rec server_loop () = 
     (* allow a client to connect *)
-    let (client_fd, client_addr) = Unix.accept fd in 
-    let buf = String.create 4096 in
-    let len = Unix.recv client_fd buf 0 (String.length buf) [] in
-    let request = String.sub buf 0 len in
-    let _ = process_request client_fd request in
-      Unix.close client_fd ; 
-      server_loop ()
+    let (client_fd, client_addr) = Unix.accept fd in
+    match Unix.fork() with
+      | 0 ->
+          let buf = String.create 4096 in
+          let len = Unix.recv client_fd buf 0 (String.length buf) [] in
+          let request = String.sub buf 0 len in
+          let _ = process_request client_fd request in
+          Unix.close client_fd ;
+      | pid ->
+        let _ = Unix.close client_fd in
+        let _ = Unix.waitpid [] pid
+        server_loop ()
   in 
     server_loop ()
 
-let main () =
-  let _ =
-    if debug then Printf.printf
-      "Starting chess engine on port %d..." server_port
-    else ()
-  in
-    server ()
-;;
-
-main ()
+server ()
