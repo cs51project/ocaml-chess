@@ -157,7 +157,7 @@ struct
       else if result = 0 then Order.Equal
       else Order.Greater
   let negate = ( *. ) (-1.0)
-  let init_eval =
+  let init_eval = N.create 768 32 1
   let apply =
   let train =
 end
