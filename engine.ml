@@ -1,4 +1,5 @@
 open Board
+open Brain
 
 module Order =
 struct
@@ -14,8 +15,8 @@ sig
   val lbound : value
   val comp : value -> value -> Order.order
   val negate : value -> value
-  val apply : evaluator -> board -> value
   val init_eval : evaluator (* standard evaluator *)
+  val apply : evaluator -> board -> value
   val train : evaluator -> evaluator (* learning function *)
 end
 
@@ -143,6 +144,23 @@ let ckmt = if (B.checkmate bd) then -100000 else 0 in
   let train eval = eval
 end
 
+module NNEval (B : BOARD) (N : NN) : (EVAL with type board = B.board) =
+struct
+  type board = B.board
+  type value = float
+  type evaluator = NN.t
+  let ubound = infinity
+  let lbound = neg_infinity
+  let comp a b =
+    let result = compare a b in
+      if result < 0 then Order.Less
+      else if result = 0 then Order.Equal
+      else Order.Greater
+  let negate = ( *. ) (-1.0)
+  let init_eval =
+  let apply =
+  let train =
+end
 
 (* an engine using minimax search based on an evaluator *)
 module MinimaxEngine (B : BOARD)
