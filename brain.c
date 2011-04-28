@@ -2,5 +2,6 @@
 
 value nn_train(value nn)
 {
-    // do stuff
+    // do parallel stuff
+    return nn;
 }

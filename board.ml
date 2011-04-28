@@ -621,10 +621,15 @@ struct
   exception InvalidPosition
   
   (**************** bitwise operator notation ****************)
+  let ($+$) = Int64.add
+  let ($*$) = Int64.mul
+  let ($-$) = Int64.sub
+  let ($/$) = Int64.div
+  let ($%$) = Int64.rem
   let ($&$) = Int64.logand
   let ($|$) = Int64.logor
   let ($^$) = Int64.logxor
-  let ($>>$) = Int64.shift_right
+  let ($>>$) = Int64.shift_right_logical
   let ($<<$) = Int64.shift_left
   (***********************************************************)
   
@@ -635,14 +640,14 @@ struct
         0x0000000000000042L;  (* white knights *)
         0x0000000000000024L;  (* white bishops *)
         0x0000000000000081L;  (* white rooks *)
-        0x0000000000000010L;  (* white queen *)
-        0x0000000000000008L;  (* white king *)
+        0x0000000000000008L;  (* white queen *)
+        0x0000000000000010L;  (* white king *)
         0x00FF000000000000L;  (* black pawns *)
         0x4200000000000000L;  (* black knights *)
         0x2400000000000000L;  (* black bishops *)
         0x8100000000000000L;  (* black rooks *)
-        0x1000000000000000L;  (* black queen *)
-        0x0800000000000000L   (* black king *)
+        0x0800000000000000L;  (* black queen *)
+        0x1000000000000000L   (* black king *)
       |] in
     let cas = {wK = true; wQ = true; bK = true; bQ = true} in
       (init_bits, {to_play = White King; ep_target = None; cas = cas})
@@ -868,12 +873,33 @@ struct
       Array.init 8 file_mask
 
   let diag_masks = 
-    let swne = 0x0102040810204080L in (* Southwest <-> Northeast main diag *)
-    let senw = 0x8040201008040201L in (* Southeast <-> Northwest main diag *)
-      let mask_sw prev n = prev $|$ rank_masks.(n) $|$ file_masks.(n)
-      let mask_ne prev n = prev $|$ rank_masks.()
-      let mask_b n = Array.fold_left ($|$) 0L (Array.sub )
-      
+    let a1h8 = 0x8040201008040201L in
+    let a8h1 = 0x0102040810204080L in
+    let northeast rank_offset = 
+      if rank_offset > 0 then a1h8 $<<$ rank_offset * 8
+      else a1h8 $>>$ (rank_offset * -8)
+    in
+    let northwest rank_offset = 
+      if rank_offset > 0 then a8h1 $<<$ rank_offset * 8
+      else a8h1 $>>$ (rank_offset * -8)
+    in
+
+  let f_projection pos = pos $%$ 0xFFL
+  let r_projection pos =
+    let prelim = pos $/$ (r_projection pos) in
+      prelim $&$ (Int64.neg prelim)  (* Clear all but least significant bit *)
+
+  let rank pos = (r_projection pos) $*$ 0xFFL
+  
+  let file pos = (f_projection pos) $*$ 0x0101010101010101L
+  
+  let diag pos axis =
+    let diag_f_proj = ((f_projection pos) $*$ axis) $&$ 0xFF00000000000000L in
+    let diag_r_proj = ((r_projection pos) $*$ axis) $&$ 0xFF00000000000000L in
+      if diag_r_proj < diag_f_proj
+      then axis $<<$ (diag_f_proj $/$ diag_r_proj)
+      else axis $>>$ (diag_r_proj $/$ diag_f_proj)
+
   let pawn_moves bd pos =
     let bits = fst bd in
     let (forward, l_mask, r_mask, start_rank, opp_pcs) =
