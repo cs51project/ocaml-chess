@@ -884,10 +884,11 @@ struct
       else a8h1 $>>$ (rank_offset * -8)
     in
 
-  let f_projection pos = pos $%$ 0xFFL
-  let r_projection pos =
-    let prelim = pos $/$ (r_projection pos) in
-      prelim $&$ (Int64.neg prelim)  (* Clear all but least significant bit *)
+  
+  let lsb pos = pos $&$ (Int64.neg pos) (* get least significant bit *)
+
+  let f_projection pos = lsb (pos $%$ 0xFFL)
+  let r_projection pos = lsb (pos $/$ (r_projection pos))
 
   let rank pos = (r_projection pos) $*$ 0xFFL
   
