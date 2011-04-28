@@ -888,11 +888,16 @@ struct
   let lsb pos = pos $&$ (Int64.neg pos) (* get least significant bit *)
 
   let f_projection pos = lsb (pos $%$ 0xFFL)
+  
   let r_projection pos = lsb (pos $/$ (r_projection pos))
 
   let rank pos = (r_projection pos) $*$ 0xFFL
   
   let file pos = (f_projection pos) $*$ 0x0101010101010101L
+  
+  let diag_ne pos =
+    let mask = if (pos $&$ se_mask) = 0L then nw_mask else se_mask in
+      ((diag_proj pos) $*$ 0x8040201008040201L) $&$ mask
   
   let diag pos axis =
     let diag_f_proj = ((f_projection pos) $*$ axis) $&$ 0xFF00000000000000L in
