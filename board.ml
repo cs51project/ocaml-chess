@@ -1027,13 +1027,62 @@ struct
   
   let castles =
 
-  let all_moves bd =
+  let generate_moves bd pos =
+  
+  let is_valid bd mv =
+    let src = mv $&$ bd.to_play in
+    let dest = mv $^$ src in
+      dest $&$ generate_moves bd src != 0x0L
 
-  let play bd mv =
+  let exec bd mv =
+    let {pieces; all_pcs; to_play; castling; ep_target} = bd in
+    let src = mv $&$ to_play in
+    let dest = mv $^$ src in
+    let to_play' = to_play $^$ mv in
+    let all_pcs' = to_play' $|$ (all_pcs $^$ mv) in
+    let to_play'' = all_pcs $^$ to_play' in
+    let pieces' = Array.map
+      (fun bm -> (bm $&$ mv) $^$ bm $^$
+      (if bm $&$ src = 0L then 0L else dest)) pieces
+    in
+    let castling' = castling $^$ (castling $&$ mv) in
+    let pawn = (dest $&$ pieces.(0) $&$ 0xFF000000) $|$ 
+    let ep_target' =
+      ((dest $&$ pieces.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
+      ((dest $&$ pieces.(6) $&$ 0x00FF000000000000L) $<<$ 8)
+    in
+      {
+        pieces = pieces';
+        all_pcs = all_pcs';
+        to_play = to_play'';
+        castling = castling';
+        ep_target = ep_target'
+      }
 
   let check bd =
+    let king = (bd.pieces.(5) $|$ bd.pieces.(11)) $&$ bd.to_play in
+    let enemy_pawns = (bd.pieces.(0) $|$ bd.pieces.(6)) $^$ bd.to_play in
+    let enemy_knights = (bd.pieces.(1) $|$ bd.pieces.(7)) $^$ bd.to_play in
+    let enemy_bishops = (bd.pieces.(2) $|$ bd.pieces.(8)) $^$ bd.to_play in
+    let enemy_rooks = (bd.pieces.(3) $|$ bd.pieces.(9))) $^$ bd.to_play in
+    let enemy_queen = (bd.pieces.(4) $|$ bd.pieces.(10)) $^$ bd.to_play in
+    let enemy_king = (bd.pieces.(5) $|$ bd.pieces.(11)) $^$ bd.to_play in
+      ((knight_moves king $&$ enemy_knights) $|$
+      (bishop_moves king $&$ (enemy_bishops $|$ enemy_queen)) $|$
+      (rook_moves king $&$ (enemy_rooks $|$ enemy_queen)) $|$
+      (king_moves king $&$ enemy_king)) > 0x0L
 
-  let checkmate bd = 
+  let play bd mv =
+    if is_valid mv then
+      let bd' = exec bd mv in
+      if check bd' then None
+      else Some bd'
+    else None
+
+  
+  let all_moves bd =
+
+  let checkmate bd = check bd && 
 end
 
 
