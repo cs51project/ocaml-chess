@@ -716,14 +716,13 @@ struct
     let all = Array.fold_left ($|$) 0L init_bits in
     let white = Array.fold_left ($|$) 0L (Array.sub 0 6 init_bits) in
     let cas = wKingside $|$ wQueenside $|$ bKingside $|$ bQueenside in
-    in
-      {
-        pieces = init_bits;
-        all_pcs = all;
-        to_play = white;
-        castling = cas;
-        ep_target = 0L
-      }
+    in  {
+          pieces = init_bits;
+          all_pcs = all;
+          to_play = white;
+          castling = cas;
+          ep_target = 0L
+        }
 
   let in_bounds rank file =
     (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7)
