@@ -19,7 +19,8 @@ sig
    * raises InvalidPosition
    *)
   val create_pos : int -> int -> position
-  
+
+  val pos_to_coord : position -> int*int
   (* convert from FEN position to position *)
   val fen_to_pos : string -> position option
   
@@ -101,7 +102,7 @@ struct
 
 
   (* Piece in given position *)
-  let lookup pos bd =
+  let lookup bd pos =
     let (map, _) = bd in 
       try
         Some (PositionMap.find pos map)

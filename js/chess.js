@@ -244,7 +244,7 @@ function submitMoveAgainstSelf(move)
 function requestMove()
 {
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
-    return sendAJAX(request, handleSubmitResponse);
+    return sendAJAX(request, handleResponseNoFollowup);
 }
 
 function requestMoveDemo()
@@ -289,15 +289,9 @@ function handleDrop(elt, evt)
     }
     else
         moveText = sq1 + sq2;
-<<<<<<< HEAD
-    
+            
     submitMove(moveText);
     //submitMoveAgainstSelf(moveText);
-=======
-
-    //submitMove(moveText);
-    submitMoveAgainstSelf(moveText);
->>>>>>> 20456831dd95cacc77bb6f32d329bb9672733e11
 }
 
 // load and display a board

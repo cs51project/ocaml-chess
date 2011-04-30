@@ -78,7 +78,7 @@ struct
     [|-20; -10; -10; -10; -10; -10; -10; -20|]
   |]
 
-  let king_table=king_table =
+  let king_table =
   [|
     [| 20;  30;  10;   0;   0;  10;  30;  20|];
     [| 20;  20;   0;   0;   0;   0;  20;  20|];
@@ -99,9 +99,8 @@ struct
       | B.Queen  ->pawn_table
       | B.King   ->king_table
 
-    
   let value_of_pos pos pc = 
-    let (rank,file) = B.get_pos pos in
+    let (rank,file) = B.pos_to_coor pos in
     match pc with
       | B.Black pt -> (get_table pt).(rank).(file)
       | B.White pt -> (get_table pt).(7-rank).(7-file)
@@ -137,8 +136,8 @@ struct
          | B.Black B.Queen | B.White B.Queen -> 975
          | B.Black B.King | B.White B.King -> 32767
       ) * pc_dir pc * pc_dir (B.to_play bd) in
-let ck = if (B.check bd) then -5 else 0 in
-let ckmt = if (B.checkmate bd) then -100000 else 0 in
+    let ck = if (B.check bd) then -5 else 0 in
+    let ckmt = if (B.checkmate bd) then -100000 else 0 in
     let eval_binding r (pos, pc) = r + (pc_val pc) + (value_of_pos pos pc) in
       Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
   let train eval = eval
@@ -157,9 +156,30 @@ struct
       else if result = 0 then Order.Equal
       else Order.Greater
   let negate = ( *. ) (-1.0)
-  let init_eval = N.create 768 32 1
-  let apply =
-  let train =
+  (* takes in array of 768 (#squares*#pieces) float values *)
+  (* outputs single float *)
+  let init_eval = N.create 768 32 1 
+(*  val eval : t -> input -> output *)
+    (* pieces = position*piece list *)
+  let apply (e: evaluator) (bd: board) : value =
+    let pc_type (piece: piece_type) =
+      match piece with
+	| Pawn -> 1.
+	| Bishop -> 3.
+	| Knight -> 3.
+	| Rook -> 5.
+	| Queen -> 9.
+	| King -> 100000. in
+    let pc_val (pc:piece) = 
+      match pc with
+	| Black pc_type -> pc_val pc_type
+	| White pc_type -> -(pc_val pc_type) in
+    let pieces = B.all_pieces bd in
+    let val_lst = List.fold_left pc_val pieces in
+    let random_array = Array.init (fun x -> float_of_int (x mod 2)) 768 in 
+    let float_array = N.eval e random_array in
+      Array.get float_array 0
+  let train = 
 end
 
 (* an engine using minimax search based on an evaluator *)
