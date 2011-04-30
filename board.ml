@@ -20,6 +20,7 @@ sig
    *)
   val create_pos : int -> int -> position
 
+  (* convert back to tuple for engine *) 
   val pos_to_coord : position -> int*int
   (* convert from FEN position to position *)
   val fen_to_pos : string -> position option
@@ -83,6 +84,10 @@ struct
   let create_pos rank file =
     if in_bounds rank file then Pos (rank, file)
     else raise InvalidPosition
+      
+  let pos_to_coord pos =
+    match pos with
+      | Pos (rank,file) -> (rank,file)
 
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
@@ -727,6 +732,9 @@ struct
       let bit_index = rank * 8 + file in
         1L $<<$ bit_index
     else 0x0L
+
+  let pos_to_coord int64 =
+    (0,0)
 
   let fen_to_pos =
     if str = "-" || String.length str != 2 then None
