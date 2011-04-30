@@ -715,7 +715,7 @@ struct
       |] in
     let all = Array.fold_left ($|$) 0L init_bits in
     let white = Array.fold_left ($|$) 0L (Array.sub 0 6 init_bits) in
-    let cas = wKingside $|$ wQueenside $|$ bKingside $|$ bQueenside in
+    let cas = wKingside $|$ wQueenside $|$ bKingside $|$ bQueenside
     in  {
           pieces = init_bits;
           all_pcs = all;
