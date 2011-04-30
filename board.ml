@@ -665,7 +665,13 @@ struct
     let file_mask i = 0x0101010101010101L $<<$ i in
       Array.init 8 file_mask
   
-  let lsb pos = pos $&$ (Int64.neg pos) (* get least significant bit *)
+  let lsb mask = mask $&$ (Int64.neg mask) (* least significant bit *)
+
+  (* FOLD for bitsets of positions *)
+  let rec fold f u mask =
+    if mask = 0L then u
+    else let pos = lsb mask in
+      fold f (f u pos) (mask $^$ pos)
 
   let f_projection pos = lsb (pos $%$ 0x00000000000000FFL)
   
@@ -950,13 +956,14 @@ struct
     then Black King
     else White King
 
-  let piece_at bd rank file =
+  let piece_at bd pos =
     let (bits, _) = bd in
     let occupied_by = occupied bits rank file in
     let pass1 = Array.mapi (fun i _ -> (i + 1) * (occupied_by i)) bits in
       index_to_piece ((Array.fold_left (+) 0 bits) - 1)
 
   let all_pieces bd =
+    let 
     let all_pieces_r pcs rank file =
       if rank >= 8 then pcs
       else if file >= 8 then all_pieces_r pcs (rank + 1) 0
