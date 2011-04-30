@@ -87,7 +87,7 @@ struct
     List.fold_left (backprop 0.1) nn patterns
 end
 
-(* feedforward neural network trained via backpropagation *)
+(* feedforward neural network trained via parallel backpropagation *)
 module ParallelNet : NN =
 struct
   type input = float array
