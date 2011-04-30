@@ -847,10 +847,10 @@ struct
         let fen_ep = Str.matched_group 5 str in
         let bits = fen_to_bits fen_pcs in
         let all = Array.fold_left ($|$) 0L bits in
-        let to_play =
-          match fen_to_color fen_color with
-            | White _ -> Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
-            | Black _ -> Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
+        let to_play = match fen_to_color fen_color with
+          | White _ -> Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
+          | Black _ -> Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
+        in
         let cas = fen_to_castle fen_castle in
         let ep_target = fen_to_pos fen_ep in
           Some
