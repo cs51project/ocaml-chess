@@ -1,5 +1,5 @@
-open Board ;;
-open Brain ;;
+open Board
+open Brain
 
 module Order =
 struct
@@ -78,7 +78,7 @@ struct
     [|-20; -10; -10; -10; -10; -10; -10; -20|]
   |]
 
-  let king_table =
+  let king_table=king_table =
   [|
     [| 20;  30;  10;   0;   0;  10;  30;  20|];
     [| 20;  20;   0;   0;   0;   0;  20;  20|];
@@ -99,8 +99,9 @@ struct
       | B.Queen  ->pawn_table
       | B.King   ->king_table
 
+    
   let value_of_pos pos pc = 
-    let (rank,file) = B.pos_to_coor pos in
+    let (rank,file) = B.get_pos pos in
     match pc with
       | B.Black pt -> (get_table pt).(rank).(file)
       | B.White pt -> (get_table pt).(7-rank).(7-file)
@@ -156,34 +157,9 @@ struct
       else if result = 0 then Order.Equal
       else Order.Greater
   let negate = ( *. ) (-1.0)
-  (* takes in array of 768 (#squares*#pieces) float values *)
-  (* outputs single float *)
-  let init_eval = N.create 768 32 1 
-  let apply (e: evaluator) (bd: board) : value =
-    let piece_index (piece: piece_type) =
-      match piece with
-	| Pawn -> 1
-	| Bishop -> 2
-	| Knight -> 3
-	| Rook -> 4
-	| Queen -> 5
-	| King -> 6 in
-    let pc_val (piece:piece) = 
-      match piece with
-	| White pc -> pc_type pc
-	| Black pc -> 2*(pc_type pc) in
-(* board -> (position * piece) list *)
-    let pieces = B.all_pieces bd in
-    let array_mapping (pos,piece) = 
-      let (rank,file) = pos_to_coord pos in
-	(pc_val piece) + rank*8 + file*8 in
-    let init_array = Array.make 768 0 in
-    let val_array = Array.mapi (fun x -> if x=(array_mapping x) then 1 else 0)
-      init_array in
-    (* let random_array = Array.init (fun x -> float_of_int (x mod 2)) 768 in *) 
-    let float_array = N.eval e val_array in
-      Array.get float_array 0
-  let train = 
+  let init_eval = N.create 768 32 1
+  let apply =
+  let train =
 end
 
 (* an engine using minimax search based on an evaluator *)
