@@ -615,13 +615,19 @@ struct
   type color = piece
   type castle = Queenside | Kingside
   type move = Standard of position * position | Castle of castle
-  type castle_rec = {wK : bool; wQ : bool; bK : bool; bQ : bool}
-  type board_config = {to_play : color; cas: castle_rec;
-                       ep_target : position option}
-  type board = (bitmask array) * board_config
+  type board =
+  {
+    pieces: bitmask array;
+    all_pcs : bitmask;
+    to_play : bitmask;
+    castling: bitmask;
+    ep_target: position
+  }
+
   exception InvalidPosition
   
   (**************** bitwise operator notation ****************)
+  
   let ($+$) = Int64.add
   let ($*$) = Int64.mul
   let ($-$) = Int64.sub
@@ -632,8 +638,59 @@ struct
   let ($^$) = Int64.logxor
   let ($>>$) = Int64.shift_right_logical
   let ($<<$) = Int64.shift_left
-  (***********************************************************)
   
+  (************************* castles *************************)
+  
+  let wKingside = 0x00000000000000F0L
+  let wQueenside = 0x000000000000001DL
+  let bKingside = 0xF000000000000000L
+  let bQueenside = 0x1D00000000000000L
+  
+  (*********** functions for manipulating bitmasks ***********)
+  
+  let opponent bd =
+    bd.all_pcs $^$ bd.to_play
+
+  let rank_masks =
+    let rank_mask i = 0x00000000000000FFL $<<$ (8 * i) in
+      Array.init 8 rank_mask
+
+  let file_masks =
+    let file_mask i = 0x0101010101010101L $<<$ i in
+      Array.init 8 file_mask
+  
+  let lsb pos = pos $&$ (Int64.neg pos) (* get least significant bit *)
+
+  let f_projection pos = lsb (pos $%$ 0x00000000000000FFL)
+  
+  let r_projection pos = lsb (pos $/$ (r_projection pos))
+
+  let rank pos = (r_projection pos) $*$ 0x00000000000000FFL
+  
+  let file pos = (f_projection pos) $*$ 0x0101010101010101L
+  
+  (* Masks for computing the diagonals *)
+  let nw_mask = 0xFF7F3F1F0F070301L
+  let se_mask = Int64.lognot nw_mask
+
+  let ne_mask = 0xFEFCF8F0E0C08000L
+  let sw_mask = 0x000103070F1F3F7FL
+  let bdr_mask = 0x0102040810204080L
+  
+  let diag_ne pos =
+    let mask = if pos $&$ se_mask > 0L then se_mask else nw_mask in
+      (diag_proj pos $*$ 0x8040201008040201L) $&$ mask
+  
+  let diag_nw pos =
+    let mask =
+      if pos $&$ sw_mask > 0L then sw_mask
+      else if pos $&$ bdr_mask > 0L then bdr_mask
+      else ne_mask
+    in (diag_proj2 pos $*$ 0x8102040810204081L) $&$ mask
+    
+  (***********************************************************)
+
+
   let init_board =
     let init_bits =
       [|
@@ -650,8 +707,17 @@ struct
         0x0800000000000000L;  (* black queen *)
         0x1000000000000000L   (* black king *)
       |] in
-    let cas = {wK = true; wQ = true; bK = true; bQ = true} in
-      (init_bits, {to_play = White King; ep_target = None; cas = cas})
+    let all = Array.fold_left ($|$) 0L init_bits in
+    let white = Array.fold_left ($|$) 0L (Array.sub 0 6 init_bits) in
+    let cas = wKingside $|$ wQueenside $|$ bKingside $|$ bQueenside in
+    in
+      {
+        pieces = init_bits;
+        all_pcs = all;
+        to_play = white;
+        castling = cas;
+        ep_target = 0L
+      }
 
   let in_bounds rank file =
     (rank >= 0 && rank <= 7) && (file >= 0 && file <= 7)
@@ -660,7 +726,7 @@ struct
     if in_bounds rank file then
       let bit_index = rank * 8 + file in
         1L $<<$ bit_index
-    else raise InvalidPosition
+    else 0x0L
 
   let fen_to_pos =
     if str = "-" || String.length str != 2 then None
@@ -669,8 +735,7 @@ struct
       let r = String.get str 1 in
       let file = (Char.code (Char.lowercase f)) - 97 in
       let rank = (Char.code r) - 49 in
-        try Some (create_pos rank file)
-        with InvalidPosition -> None
+        create_pos rank file
 
   let piece_to_index pc =
     match pc with
@@ -734,15 +799,14 @@ struct
     in fen_to_bits_r str (Array.make 12 0L) 7 0
 
   let fen_to_color str =
-    if str = "b" then Black King
-    else White King
+    if str = "b" then Black King else White King
 
   let fen_to_castle str =
-    let wK = String.contains str 'K' in
-    let wQ = String.contains str 'Q' in
-    let bK = String.contains str 'k' in
-    let bQ = String.contains str 'q' in
-      {wK = wK; wQ = wQ; bK = bK; bQ = bQ}
+    let wK = if String.contains str 'K' then wKingside else 0x0L in
+    let wQ = if String.contains str 'Q' then wQueenside else 0x0L in
+    let bK = if String.contains str 'k' then bKingside else 0x0L in
+    let bQ = if String.contains str 'q' then bQueenside else 0x0L in
+      wK $|$ wQ $|$ bK $|$ bQ
 
   let fen_to_pos str =
     if str = "-" || String.length str != 2 then None
@@ -751,8 +815,7 @@ struct
       let r = String.get str 1 in
       let file = (Char.code (Char.lowercase f)) - 97 in
       let rank = (Char.code r) - 49 in
-        try Some (create_pos rank file)
-        with InvalidPosition -> None
+        create_pos rank file
   
   let fen_decode str =
     let fen_re_string =
@@ -765,10 +828,20 @@ struct
         let fen_castle = Str.matched_group 4 str in
         let fen_ep = Str.matched_group 5 str in
         let bits = fen_to_bits fen_pcs in
-        let to_play = fen_to_color fen_color in
+        let all = Array.fold_left ($|$) 0L bits in
+        let to_play =
+          match fen_to_color fen_color with
+            | White _ -> Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
+            | Black _ -> Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
         let cas = fen_to_castle fen_castle in
         let ep_target = fen_to_pos fen_ep in
-          Some (bits, {to_play = to_play; cas = cas; ep_target = ep_target})
+          Some
+          {
+            pieces = bits;
+            all_pcs = all;
+            to_play = to_play;
+            castling = cas;
+            ep_target = ep_target}
       else None
 
   let occupied bits rank file piece_index =
@@ -807,41 +880,57 @@ struct
                 bits_to_fen_r new_str rank (file + 1) 0
     in bits_to_fen_r "" 7 0 0
     
-  let color_to_fen player =
-    match player with
-      | White _ -> "w"
-      | Black _ -> "b"
+  let player_to_fen player =
+    if player $&$ bd.pieces.(5) = 0 then "b" else "w"
   
   let castle_to_fen cas =
-    let {wK; wQ; bK; bQ} = cas in
     let str =
-      (if wK then "K" else "") ^
-      (if wQ then "Q" else "") ^
-      (if bK then "k" else "") ^
-      (if bQ then "q" else "")
+      (if cas $&$ wKingside != 0L then "K" else "") ^
+      (if cas $&$ wQueenside != 0L then "Q" else "") ^
+      (if cas $&$ bKingside != 0L then "k" else "") ^
+      (if cas $&$ bQueenside != 0L then "q" else "")
     in if str = "" then "-" else str
   
   
   let target_to_fen pos =
-    match pos with
-      | None -> "-"
-      | Some pos ->
-          let Pos(rank, file) = pos in
-          let r = Char.chr (rank + 49) in
-          let f = Char.chr (file + 97) in
-            (Char.escaped f) ^ (Char.escaped r)
+    if pos = 0x0L then "-"
+    else
+      let rp = r_projection pos in
+      let fp = f_projection pos in
+      let rank =
+        if rp =      0x0000000000000001L then "1"
+        else if rp = 0x0000000000000100L then "2"
+        else if rp = 0x0000000000010000L then "3"
+        else if rp = 0x0000000001000000L then "4"
+        else if rp = 0x0000000100000000L then "5"
+        else if rp = 0x0000010000000000L then "6"
+        else if rp = 0x0001000000000000L then "7"
+        else if rp = 0x0100000000000000L then "8"
+        else raise InvalidPosition
+      in
+      let file =
+        if fp =      0x01 then "a"
+        else if fp = 0x02 then "b"
+        else if fp = 0x04 then "c"
+        else if fp = 0x08 then "d"
+        else if fp = 0x10 then "e"
+        else if fp = 0x20 then "f"
+        else if fp = 0x40 then "g"
+        else if fp = 0x80 then "h"
+        else raise InvalidPosition
+      in file ^ rank
   
   let fen_encode bd =
-    let (_, cfg) = bd in
     let pcs_fen = bits_to_fen bd in
-    let color_fen = color_to_fen cfg.to_play in
-    let castle_fen = castle_to_fen cfg.cas in
-    let ep_fen = target_to_fen cfg.ep_target in
+    let color_fen = player_to_fen bd.to_play in
+    let castle_fen = castle_to_fen bd.castling in
+    let ep_fen = target_to_fen bd.ep_target in
       pcs_fen ^ " " ^ color_fen ^ " " ^ castle_fen ^ " " ^ ep_fen
 
-  let to_play bd = (snd bd).to_play
-  
-  let ep_target bd = (snd bd).ep_target
+  let to_play bd =
+    if bd.to_play $&$ bd.pieces.(6) = 0
+    then Black King
+    else White King
 
   let piece_at bd rank file =
     let (bits, _) = bd in
@@ -857,80 +946,144 @@ struct
         | None -> all_pieces_r pcs rank (file + 1)
         | Some pc -> all_pieces_r (pc :: pcs) rank (file + 1)
 
-  let all_white bd =
-    let bits = fst bd in
-      Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
-
-  let all_black bd =
-    let bits = fst bd in
-      Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
-
-  let rank_masks =
-    let rank_mask i = 0x00000000000000FFL $<<$ (8 * i) in
-      Array.init 8 rank_mask
-
-  let file_masks =
-    let file_mask i = 0x8080808080808080L $>>$ i in
-      Array.init 8 file_mask
-
-  let diag_masks = 
-    let a1h8 = 0x8040201008040201L in
-    let a8h1 = 0x0102040810204080L in
-    let northeast rank_offset = 
-      if rank_offset > 0 then a1h8 $<<$ rank_offset * 8
-      else a1h8 $>>$ (rank_offset * -8)
-    in
-    let northwest rank_offset = 
-      if rank_offset > 0 then a8h1 $<<$ rank_offset * 8
-      else a8h1 $>>$ (rank_offset * -8)
-    in
-
-  
-  let lsb pos = pos $&$ (Int64.neg pos) (* get least significant bit *)
-
-  let f_projection pos = lsb (pos $%$ 0xFFL)
-  let r_projection pos = lsb (pos $/$ (r_projection pos))
-
-  let rank pos = (r_projection pos) $*$ 0xFFL
-  
-  let file pos = (f_projection pos) $*$ 0x0101010101010101L
-  
-  let diag pos axis =
-    let diag_f_proj = ((f_projection pos) $*$ axis) $&$ 0xFF00000000000000L in
-    let diag_r_proj = ((r_projection pos) $*$ axis) $&$ 0xFF00000000000000L in
-      if diag_r_proj < diag_f_proj
-      then axis $<<$ (diag_f_proj $/$ diag_r_proj)
-      else axis $>>$ (diag_r_proj $/$ diag_f_proj)
-
   let pawn_moves bd pos =
-    let bits = fst bd in
-    let (forward, l_mask, r_mask, start_rank, opp_pcs) =
+    let bits = bd.pieces in
+    let (forward, l_mask, r_mask, start_rank) =
       let nlt = Int64.lognot (file_masks.(0)) in
       let nrt = Int64.lognot (file_masks.(7)) in
         match to_play bd with
           | White _ ->
-              (($<<$), nlt, nrt, rank_masks.(1), all_black bd)
+              (($<<$), nlt, nrt, rank_masks.(1))
           | Black _ ->
-              (($>>$), nrt, nlt, rank_masks.(6), all_white bd)
+              (($>>$), nrt, nlt, rank_masks.(6))
     in
-    let all_pcs = Array.fold_left ($|$) 0L bits in
-    let empty = Int64.lognot all_bits in
+    let empty = Int64.lognot bd.all_pcs in
+    let opponent = opponent bd in
     let fwd_by_one = (forward pos 8) $&$ empty in
     let virgin = pos $&$ start_rank in
     let fwd_by_two = empty $&$ (forward (empty $&$ (forward virgin 8)) 8) in
     let attack_l = forward (pos $&$ l_mask) 9 in
     let attack_r = forward (pos $&$ r_mask) 7 in
-    let targets = opp_pcs $|$ (ep_target bd) in
+    let targets = opponent $|$ (ep_target bd) in
     let captures = (attack_l $|$ attack_r) $&$ targets in
       fwd_by_one $|$ fwd_by_two $|$ captures
 
-  let all_moves bd =
+  let knight_moves bd pos =
+    let bits = bd.pieces in
+    let empty = Int64.lognot bd.all_pcs in
+    let opponent = opponent bd in
+    let mask =
+      if pos $&$ 0x0303030303030303L > 0 then 0x0F0F0F0F0F0F0F0FL
+      else if pos $&$ 0x3C3C3C3C3C3C3C3CL  > 0 then 0xFFFFFFFFFFFFFFFFL
+      else 0xF0F0F0F0F0F0F0F0L in
+    let moves =
+      ((pos $*$ 0x0000000000028440L) $|$ 
+      ((pos $>>$ 24) $*$ 0x0000000000044280L) $|$
+      ((pos $*$ 0x0000000000044280L) $>>$ 24)) $&$ mask
+    in
+      moves $&$ (opp_pcs $|$ empty)
 
-  let play bd mv =
+  let rook_moves bd pos =
+    let empty = Int64.lognot bd.all_pcs in
+    let opponent = opponent bd in
+    let up_right = Int64.neg pos in
+    let down_left = pos $-$ 0x1L in
+    let r_obstructions = bd.all_pcs $&$ rank pos in
+    let f_obstructions = bd.all_pcs $&$ file pos in
+    let rR = (lsb (up_right $&$ r_obstructions)) $-$ pos in
+    let rL = pos $-$ msb (down_left $&$ r_obstructions) in
+    let fU = (lsb (up_right $&$ f_obstructions)) $-$ pos in
+    let fD = pos $-$ msb (down_left $&$ f_obstructions) in
+      (rR $|$ rL $|$ fU $|$ fD) $&$ (empty $|$ opponent)
+  
+  let bishop_moves bd pos =
+    let empty = Int64.lognot bd.all_pcs in
+    let opponent = opponent bd in
+    let up_right = Int64.neg pos in
+    let down_left = pos $-$ 0x1L in
+    let ne_obstructions = bd.all_pcs $&$ diag_ne pos in
+    let nw_obstructions = bd.all_pcs $&$ diag_nw pos in
+    let neU = (lsb (up_right $&$ ne_obstructions)) $-$ pos in
+    let neD = pos $-$ msb (down_left $&$ ne_obstructions) in
+    let nwU = (lsb (up_right $&$ nw_obstructions)) $-$ pos in
+    let nwD = pos $-$ msb (down_left $&$ nw_obstructions) in
+      (neU $|$ neD $|$ nwU $|$ nwD) $&$ (empty $|$ opponent)
+  
+  let queen_moves bd pos = rook_moves bd pos $|$ bishop_moves bd pos
+  
+  let king_moves bd pos =
+    let bits = bd.pieces in
+    let empty = Int64.lognot bd.all_pcs in
+    let opponent = opponent bd in
+    let mask =
+      if pos $&$ 0x0101010101010101L > 0 then 0x0F0F0F0F0F0F0F0FL
+      else if pos $&$ 0x7E7E7E7E7E7E7E7EL  > 0 then 0xFFFFFFFFFFFFFFFFL
+      else 0xF0F0F0F0F0F0F0F0L in
+    let moves =
+      ((pos $*$ 0x0000000000000102L) $|$ 
+      ((pos $>>$ 16) $*$ 0x000000000028100L) $|$
+      ((pos $*$ 0x0000000000028100L) $>>$ 16)) $&$ mask
+    in
+      moves $&$ (opp_pcs $|$ empty)
+  
+  let castles =
+
+  let generate_moves bd pos =
+  
+  let is_valid bd mv =
+    let src = mv $&$ bd.to_play in
+    let dest = mv $^$ src in
+      dest $&$ generate_moves bd src != 0x0L
+
+  let exec bd mv =
+    let {pieces; all_pcs; to_play; castling; ep_target} = bd in
+    let src = mv $&$ to_play in
+    let dest = mv $^$ src in
+    let to_play' = to_play $^$ mv in
+    let all_pcs' = to_play' $|$ (all_pcs $^$ mv) in
+    let to_play'' = all_pcs $^$ to_play' in
+    let pieces' = Array.map
+      (fun bm -> (bm $&$ mv) $^$ bm $^$
+      (if bm $&$ src = 0L then 0L else dest)) pieces
+    in
+    let castling' = castling $^$ (castling $&$ mv) in
+    let pawn = (dest $&$ pieces.(0) $&$ 0xFF000000) $|$ 
+    let ep_target' =
+      ((dest $&$ pieces.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
+      ((dest $&$ pieces.(6) $&$ 0x00FF000000000000L) $<<$ 8)
+    in
+      {
+        pieces = pieces';
+        all_pcs = all_pcs';
+        to_play = to_play'';
+        castling = castling';
+        ep_target = ep_target'
+      }
 
   let check bd =
+    let king = (bd.pieces.(5) $|$ bd.pieces.(11)) $&$ bd.to_play in
+    let enemy_pawns = (bd.pieces.(0) $|$ bd.pieces.(6)) $^$ bd.to_play in
+    let enemy_knights = (bd.pieces.(1) $|$ bd.pieces.(7)) $^$ bd.to_play in
+    let enemy_bishops = (bd.pieces.(2) $|$ bd.pieces.(8)) $^$ bd.to_play in
+    let enemy_rooks = (bd.pieces.(3) $|$ bd.pieces.(9))) $^$ bd.to_play in
+    let enemy_queen = (bd.pieces.(4) $|$ bd.pieces.(10)) $^$ bd.to_play in
+    let enemy_king = (bd.pieces.(5) $|$ bd.pieces.(11)) $^$ bd.to_play in
+      ((knight_moves king $&$ enemy_knights) $|$
+      (bishop_moves king $&$ (enemy_bishops $|$ enemy_queen)) $|$
+      (rook_moves king $&$ (enemy_rooks $|$ enemy_queen)) $|$
+      (king_moves king $&$ enemy_king)) > 0x0L
 
-  let checkmate bd = 
+  let play bd mv =
+    if is_valid mv then
+      let bd' = exec bd mv in
+      if check bd' then None
+      else Some bd'
+    else None
+
+  
+  let all_moves bd =
+
+  let checkmate bd = check bd && 
 end
 
 
