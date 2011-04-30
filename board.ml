@@ -20,8 +20,9 @@ sig
    *)
   val create_pos : int -> int -> position
 
-  (* convert back to tuple for engine *) 
+  (* convert pos to tuple of coordinates for engine *) 
   val pos_to_coord : position -> int*int
+  
   (* convert from FEN position to position *)
   val fen_to_pos : string -> position option
   
@@ -87,7 +88,7 @@ struct
       
   let pos_to_coord pos =
     match pos with
-      | Pos (rank,file) -> (rank,file)
+      | Pos(rank, file) -> (rank, file)
 
   let init_board = 
     let files = [0; 1; 2; 3; 4; 5; 6; 7] in
@@ -733,8 +734,18 @@ struct
         1L $<<$ bit_index
     else 0x0L
 
-  let pos_to_coord int64 =
-    (0,0)
+  let pos_to_coord pos =
+    let r = r_projection pos in
+    let f = f_projection pos in
+    let rank =
+      (if r $&$ 0x0101010100000000L != 0L then 4 else 0) +
+      (if r $&$ 0x0101000001010000L != 0L then 2 else 0) +
+      (if r $&$ 0x0100010001000100L != 0L then 1 else 0) in
+    let file =
+      (if r $&$ 0xF0 != 0L then 4 else 0) +
+      (if r $&$ 0xCC != 0L then 2 else 0) +
+      (if r $&$ 0xAA != 0L then 1 else 0)
+    in (rank, file)
 
   let fen_to_pos =
     if str = "-" || String.length str != 2 then None
