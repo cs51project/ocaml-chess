@@ -1046,7 +1046,7 @@ struct
       (if bm $&$ src = 0L then 0L else dest)) pieces
     in
     let castling' = castling $^$ (castling $&$ mv) in
-    let pawn = (dest $&$ pieces.(0) $&$ 0xFF000000) $|$ 
+    let pawn = (dest $&$ pieces.(0) $&$ 0xFF000000L) $|$ 
     let ep_target' =
       ((dest $&$ pieces.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
       ((dest $&$ pieces.(6) $&$ 0x00FF000000000000L) $<<$ 8)
