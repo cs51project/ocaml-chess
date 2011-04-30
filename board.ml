@@ -108,7 +108,7 @@ struct
 
 
   (* Piece in given position *)
-  let lookup bd pos =
+  let lookup pos bd =
     let (map, _) = bd in 
       try
         Some (PositionMap.find pos map)
