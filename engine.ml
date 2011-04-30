@@ -1,5 +1,5 @@
-open Board
-open Brain
+open Board ;;
+open Brain ;;
 
 module Order =
 struct
@@ -159,25 +159,29 @@ struct
   (* takes in array of 768 (#squares*#pieces) float values *)
   (* outputs single float *)
   let init_eval = N.create 768 32 1 
-(*  val eval : t -> input -> output *)
-    (* pieces = position*piece list *)
   let apply (e: evaluator) (bd: board) : value =
-    let pc_type (piece: piece_type) =
+    let piece_index (piece: piece_type) =
       match piece with
-	| Pawn -> 1.
-	| Bishop -> 3.
-	| Knight -> 3.
-	| Rook -> 5.
-	| Queen -> 9.
-	| King -> 100000. in
-    let pc_val (pc:piece) = 
-      match pc with
-	| Black pc_type -> pc_val pc_type
-	| White pc_type -> -(pc_val pc_type) in
+	| Pawn -> 1
+	| Bishop -> 2
+	| Knight -> 3
+	| Rook -> 4
+	| Queen -> 5
+	| King -> 6 in
+    let pc_val (piece:piece) = 
+      match piece with
+	| White pc -> pc_type pc
+	| Black pc -> 2*(pc_type pc) in
+(* board -> (position * piece) list *)
     let pieces = B.all_pieces bd in
-    let val_lst = List.fold_left pc_val pieces in
-    let random_array = Array.init (fun x -> float_of_int (x mod 2)) 768 in 
-    let float_array = N.eval e random_array in
+    let array_mapping (pos,piece) = 
+      let (rank,file) = pos_to_coord pos in
+	(pc_val piece) + rank*8 + file*8 in
+    let init_array = Array.make 768 0 in
+    let val_array = Array.mapi (fun x -> if x=(array_mapping x) then 1 else 0)
+      init_array in
+    (* let random_array = Array.init (fun x -> float_of_int (x mod 2)) 768 in *) 
+    let float_array = N.eval e val_array in
       Array.get float_array 0
   let train = 
 end
