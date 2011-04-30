@@ -276,6 +276,7 @@ function handleDrop(elt, evt)
     var sq1 = evt.dataTransfer.getData("text/plain").toLowerCase();
     var sq2 = elt.id.toLowerCase();
     var moveText = "";
+    
     // check for castling!!!
     if((sq1 === "e1" && board.pieces[0][4] == "wking") ||
        (sq1 === "e8" && board.pieces[7][4] == "bking"))
