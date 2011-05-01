@@ -841,13 +841,13 @@ struct
       wK $|$ wQ $|$ bK $|$ bQ
 
   let fen_to_pos str =
-    if str = "-" || String.length str != 2 then 0x0L
+    if str = "-" || String.length str != 2 then None
     else
       let f = String.get str 0 in
       let r = String.get str 1 in
       let file = (Char.code (Char.lowercase f)) - 97 in
       let rank = (Char.code r) - 49 in
-        create_pos rank file
+        Some (create_pos rank file)
   
   let fen_decode str =
     let fen_re_string =
@@ -866,14 +866,16 @@ struct
           | Black _ -> Array.fold_left ($|$) 0L (Array.sub bits 6 6)
         in
         let cas = fen_to_castle fen_castle in
-        let ep_target = fen_to_pos fen_ep in
-          Some
-          {
-            pieces = bits;
-            all_pcs = all;
-            to_play = to_play;
-            castling = cas;
-            ep_target = ep_target}
+        let ep_target = match fen_to_pos fen_ep with
+          | Some target -> target
+          | None -> 0x0L
+        in Some {
+                  pieces = bits;
+                  all_pcs = all;
+                  to_play = to_play;
+                  castling = cas;
+                  ep_target = ep_target
+                }
       else None
 
   let bits_to_fen bits =
@@ -1068,6 +1070,15 @@ struct
       | White Rook | Black Rook -> rook_moves
       | White Queen | Black Queen -> queen_moves
       | White King | Black King -> king_moves
+
+  let moves_of pc =
+    match pc with
+      | White Pawn | Black Pawn -> pawn_moves
+      | White Knight | Black Knight -> knight_moves
+      | White Bishop | Black Bishop -> bishop_moves
+      | White Rook | Black Rook -> rook_moves
+      | White Queen | Black Queen -> queen_moves
+      | White King | Black King -> king_moves
   
   let generate_targets bd =
     let targets pc mask =
@@ -1081,6 +1092,12 @@ struct
       Array.mapi (fun i mask -> targets 
       (index_to_piece i) mask) active_pieces
     in Array.fold_left ($|$) 0L nested_tgts
+  
+  let generate_moves bd pos =
+    let moves_by_piece =
+      Array.mapi (fun i mask -> moves_of (index_to_piece i)
+      bd (mask $&$ pos)) bd.pieces
+    in Array.fold_left ($|$) 0L moves_by_piece
   
   let castles bd =
     let (kingside, queenside, ks_mask, qs_mask, ks_checkmask, qs_checkmask) =
@@ -1136,7 +1153,7 @@ struct
       king $&$ attacked != 0L
 
   let play bd mv =
-    if is_valid mv then
+    if is_valid bd mv then
       let bd' = exec bd mv in
       if check bd' then None
       else Some bd'
