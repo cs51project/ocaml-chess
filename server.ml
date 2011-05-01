@@ -255,9 +255,7 @@ let server () =
           Unix.close client_fd ;
       | pid ->
         let _ = Unix.close client_fd in
-        let _ = Unix.waitpid [] pid
-        server_loop ()
-  in 
-    server_loop ()
-
-server ()
+        let _ = Unix.waitpid [] pid in server_loop ()
+  in server_loop ()
+in server ()
+  
