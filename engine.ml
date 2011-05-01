@@ -226,7 +226,7 @@ struct
     in
       match B.all_moves bd with
         | [] -> None
-        | mv :: tl -> 
+        | mv :: tl ->
             let evaluated = List.map eval_move tl in
               List.fold_left choose_move (eval_move mv) evaluated
 end
