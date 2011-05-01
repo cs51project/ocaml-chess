@@ -772,15 +772,6 @@ struct
       (if f $&$ 0xAAL != 0L then 1 else 0)
     in (rank, file)
 
-  let fen_to_pos str =
-    if str = "-" || String.length str != 2 then None
-    else
-      let f = String.get str 0 in
-      let r = String.get str 1 in
-      let file = (Char.code (Char.lowercase f)) - 97 in
-      let rank = (Char.code r) - 49 in
-        create_pos rank file
-
   let piece_to_index pc =
     match pc with
       | White Pawn -> 0
@@ -797,17 +788,14 @@ struct
       | Black King -> 11
 
   let index_to_piece i =
-    try
-      Some
-        ([|
-          White Pawn; White Knight;
-          White Bishop; White Rook;
-          White Queen; White King;
-          Black Pawn; Black Knight;
-          Black Bishop; Black Rook;
-          Black Queen; Black King;
-        |].(i))
-    with Invalid_argument _ -> None
+    [|
+      White Pawn; White Knight;
+      White Bishop; White Rook;
+      White Queen; White King;
+      Black Pawn; Black Knight;
+      Black Bishop; Black Rook;
+      Black Queen; Black King;
+    |].(i)
 
   let char_to_piece c =
     let lower_c = Char.lowercase c in
@@ -831,15 +819,15 @@ struct
         let len = String.length str in
         let tail = String.sub str 1 (len - 1) in
           if c = '/' || file >= 8 then
-            fen_to_map_r tail map (rank - 1) 0
+            fen_to_bits_r tail bits (rank - 1) 0
           else if ascii >= 48 && ascii < 58 then
             let gap = ascii - 48 in
-              fen_to_map_r tail map rank (file + gap)
+              fen_to_bits_r tail bits rank (file + gap)
           else
             let index = piece_to_index (char_to_piece c) in
             let pos = create_pos rank file in
             let _ = bits.(index) <- bits.(index) $|$ pos in
-              fen_to_map_r tail bits rank (file + 1)
+              fen_to_bits_r tail bits rank (file + 1)
     in fen_to_bits_r str (Array.make 12 0L) 7 0
 
   let fen_to_color str =
@@ -853,7 +841,7 @@ struct
       wK $|$ wQ $|$ bK $|$ bQ
 
   let fen_to_pos str =
-    if str = "-" || String.length str != 2 then None
+    if str = "-" || String.length str != 2 then 0x0L
     else
       let f = String.get str 0 in
       let r = String.get str 1 in
@@ -874,8 +862,8 @@ struct
         let bits = fen_to_bits fen_pcs in
         let all = Array.fold_left ($|$) 0L bits in
         let to_play = match fen_to_color fen_color with
-          | White _ -> Array.fold_left ($|$) 0L (Array.sub 0 6 bits)
-          | Black _ -> Array.fold_left ($|$) 0L (Array.sub 6 6 bits)
+          | White _ -> Array.fold_left ($|$) 0L (Array.sub bits 0 6)
+          | Black _ -> Array.fold_left ($|$) 0L (Array.sub bits 6 6)
         in
         let cas = fen_to_castle fen_castle in
         let ep_target = fen_to_pos fen_ep in
@@ -888,12 +876,6 @@ struct
             ep_target = ep_target}
       else None
 
-  let occupied bits rank file piece_index =
-    let pos = create_pos rank file in
-    let bit_index = rank * 8 + file in
-    let masked = pos $&$ bits.(piece_index) in
-      to_int (masked $>>$ bit_index)
-
   let bits_to_fen bits =
     let rec bits_to_fen_r str rank file gap =
       let gap_str = if gap > 0 then string_of_int gap else "" in
@@ -902,7 +884,12 @@ struct
         else if file >= 8 && rank > 0 then
           bits_to_fen_r (str ^ gap_str ^ "/") (rank - 1) 0 0
         else
-          let occupied_by = occupied bits rank file in
+          let occupied_by piece_index =
+            let pos = create_pos rank file in
+            let bit_index = rank * 8 + file in
+            let masked = pos $&$ bits.(piece_index) in
+              Int64.to_int (masked $>>$ bit_index)
+          in
           let ascii =
             0x50 * (occupied_by  0) +   (* 'P' *)
             0x4E * (occupied_by  1) +   (* 'N' *)
@@ -924,8 +911,8 @@ struct
                 bits_to_fen_r new_str rank (file + 1) 0
     in bits_to_fen_r "" 7 0 0
     
-  let player_to_fen player =
-    if player $&$ bd.pieces.(5) = 0 then "b" else "w"
+  let player_fen bd =
+    if bd.to_play $&$ bd.pieces.(5) = 0L then "b" else "w"
   
   let castle_to_fen cas =
     let str =
@@ -953,32 +940,32 @@ struct
         else raise InvalidPosition
       in
       let file =
-        if fp =      0x01 then "a"
-        else if fp = 0x02 then "b"
-        else if fp = 0x04 then "c"
-        else if fp = 0x08 then "d"
-        else if fp = 0x10 then "e"
-        else if fp = 0x20 then "f"
-        else if fp = 0x40 then "g"
-        else if fp = 0x80 then "h"
+        if fp =      0x01L then "a"
+        else if fp = 0x02L then "b"
+        else if fp = 0x04L then "c"
+        else if fp = 0x08L then "d"
+        else if fp = 0x10L then "e"
+        else if fp = 0x20L then "f"
+        else if fp = 0x40L then "g"
+        else if fp = 0x80L then "h"
         else raise InvalidPosition
       in file ^ rank
   
   let fen_encode bd =
-    let pcs_fen = bits_to_fen bd in
-    let color_fen = player_to_fen bd.to_play in
+    let pcs_fen = bits_to_fen bd.pieces in
+    let color_fen = player_fen bd in
     let castle_fen = castle_to_fen bd.castling in
     let ep_fen = target_to_fen bd.ep_target in
       pcs_fen ^ " " ^ color_fen ^ " " ^ castle_fen ^ " " ^ ep_fen
 
   let to_play bd =
-    if bd.to_play $&$ bd.pieces.(6) = 0
+    if bd.to_play $&$ bd.pieces.(5) = 0L
     then Black King
     else White King
 
   let all_pieces bd =
     let deconstruct pc mask =
-      fold (fun lst pos -> (pos, pc) :: lst) mask in
+      fold (fun lst pos -> (pos, pc) :: lst) [] mask in
     let nested_pcs =
       Array.mapi (fun i mask -> deconstruct 
       (index_to_piece i) mask) bd.pieces
@@ -1001,16 +988,29 @@ struct
     let fwd_by_two = empty $&$ (forward (empty $&$ (forward virgin 8)) 8) in
     let attack_l = forward (pos $&$ l_mask) 9 in
     let attack_r = forward (pos $&$ r_mask) 7 in
-    let targets = opponent $|$ (ep_target bd) in
+    let targets = opponent $|$ bd.ep_target in
     let captures = (attack_l $|$ attack_r) $&$ targets in
       fwd_by_one $|$ fwd_by_two $|$ captures
+
+  let pawn_targets bd pos =
+    let (forward, l_mask, r_mask) =
+      let nlt = Int64.lognot (file_masks.(0)) in
+      let nrt = Int64.lognot (file_masks.(7)) in
+        match to_play bd with
+          | White _ -> (($<<$), nlt, nrt)
+          | Black _ -> (($>>$), nrt, nlt)
+    in
+    let opponent = opponent bd in
+    let attack_l = forward (pos $&$ l_mask) 9 in
+    let attack_r = forward (pos $&$ r_mask) 7 in
+      (attack_l $|$ attack_r) $&$ opponent
 
   let knight_moves bd pos =
     let empty = Int64.lognot bd.all_pcs in
     let opponent = opponent bd in
     let mask =
-      if pos $&$ 0x0303030303030303L > 0 then 0x0F0F0F0F0F0F0F0FL
-      else if pos $&$ 0x3C3C3C3C3C3C3C3CL  > 0 then 0xFFFFFFFFFFFFFFFFL
+      if pos $&$ 0x0303030303030303L > 0L then 0x0F0F0F0F0F0F0F0FL
+      else if pos $&$ 0x3C3C3C3C3C3C3C3CL > 0L then 0xFFFFFFFFFFFFFFFFL
       else 0xF0F0F0F0F0F0F0F0L in
     let moves =
       ((pos $*$ 0x0000000000028440L) $|$ 
@@ -1051,8 +1051,8 @@ struct
     let empty = Int64.lognot bd.all_pcs in
     let opponent = opponent bd in
     let mask =
-      if pos $&$ 0x0101010101010101L > 0 then 0x0F0F0F0F0F0F0F0FL
-      else if pos $&$ 0x7E7E7E7E7E7E7E7EL  > 0 then 0xFFFFFFFFFFFFFFFFL
+      if pos $&$ 0x0101010101010101L > 0L then 0x0F0F0F0F0F0F0F0FL
+      else if pos $&$ 0x7E7E7E7E7E7E7E7EL > 0L then 0xFFFFFFFFFFFFFFFFL
       else 0xF0F0F0F0F0F0F0F0L in
     let moves =
       ((pos $*$ 0x0000000000000102L) $|$ 
@@ -1060,21 +1060,22 @@ struct
       ((pos $*$ 0x0000000000028100L) $>>$ 16)) $&$ mask
     in moves $&$ (opponent $|$ empty)
   
-  let moves_of pc =
+  let targets_of pc =
     match pc with
-      White Pawn | Black Pawn -> pawn_moves
-      White Knight | Black Knight -> knight_moves
-      White Bishop | Black Bishop -> bishop_moves
-      White Rook | Black Rook -> rook_moves
-      White Queen | Black Queen -> queen_moves
-      White King | Black King -> king_moves
+      | White Pawn | Black Pawn -> pawn_targets
+      | White Knight | Black Knight -> knight_moves
+      | White Bishop | Black Bishop -> bishop_moves
+      | White Rook | Black Rook -> rook_moves
+      | White Queen | Black Queen -> queen_moves
+      | White King | Black King -> king_moves
   
   let generate_targets bd =
     let targets pc mask =
-      fold (fun tgts pos -> (moves_of pc bd pos) $|$ tgts) mask in
+      fold (fun tgts pos -> (targets_of pc bd pos) $|$ tgts) 0L mask
+    in
     let active_pieces = match to_play bd with
-      | White _ -> Array.sub 0 6 bd.pieces
-      | Black _ -> Array.sub 6 6 bd.pieces
+      | White _ -> Array.sub bd.pieces 0 6
+      | Black _ -> Array.sub bd.pieces 6 6
     in
     let nested_tgts =
       Array.mapi (fun i mask -> targets 
@@ -1082,9 +1083,14 @@ struct
     in Array.fold_left ($|$) 0L nested_tgts
   
   let castles bd =
-    let (kingside, queenside) = match to_play bd with
-      | White _ -> (wKingside, wQueenside)
-      | Black _ -> (bKingside, bQueenside)
+    let (kingside, queenside, ks_mask, qs_mask, ks_checkmask, qs_checkmask) =
+      match to_play bd with
+        | White _ ->
+            (wKingside, wQueenside, wK_mask, wQ_mask,
+            wK_checkmask, wQ_checkmask)
+        | Black _ ->
+            (bKingside, bQueenside, bK_mask, bQ_mask,
+            bK_checkmask, bQ_checkmask)
     in
     let ks_allowed = (kingside $&$ bd.castling = kingside) in
     let qs_allowed = (queenside $&$ bd.castling = queenside) in
@@ -1125,17 +1131,9 @@ struct
         }
 
   let check bd =
+    let attacked = generate_targets (flipped bd) in
     let king = (bd.pieces.(5) $|$ bd.pieces.(11)) $&$ bd.to_play in
-    let enemy_pawns = (bd.pieces.(0) $|$ bd.pieces.(6)) $^$ bd.to_play in
-    let enemy_knights = (bd.pieces.(1) $|$ bd.pieces.(7)) $^$ bd.to_play in
-    let enemy_bishops = (bd.pieces.(2) $|$ bd.pieces.(8)) $^$ bd.to_play in
-    let enemy_rooks = (bd.pieces.(3) $|$ bd.pieces.(9)) $^$ bd.to_play in
-    let enemy_queen = (bd.pieces.(4) $|$ bd.pieces.(10)) $^$ bd.to_play in
-    let enemy_king = (bd.pieces.(5) $|$ bd.pieces.(11)) $^$ bd.to_play in
-      ((knight_moves king $&$ enemy_knights) $|$
-      (bishop_moves king $&$ (enemy_bishops $|$ enemy_queen)) $|$
-      (rook_moves king $&$ (enemy_rooks $|$ enemy_queen)) $|$
-      (king_moves king $&$ enemy_king)) != 0x0L
+      king $&$ attacked != 0L
 
   let play bd mv =
     if is_valid mv then
