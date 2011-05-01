@@ -209,7 +209,6 @@ struct
                       let v' = L.negate (score_r (n - 1) result) in
                         match L.comp v' v with
                           | Order.Less | Order.Equal -> v
-                          | Order.Equal -> 
                           | Order.Greater -> v'
         in score_moves a b (B.all_moves bd)
     in score_r R.depth L.ubound L.lbound bd
