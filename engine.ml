@@ -156,21 +156,15 @@ struct
       else if result = 0 then Order.Equal
       else Order.Greater
   let negate = ( *. ) (-1.0)
-  let init_eval = N.create 768 32 1
+  let init_eval = N.create 384 32 1
   let translate bd =
     let pc_index pc = match pc with
-      | White Pawn -> 0
-      | White Knight -> 64
-      | White Bishop -> 128
-      | White Rook -> 192
-      | White Queen -> 256
-      | White King -> 320
-      | Black Pawn -> 384
-      | Black Knight -> 448
-      | Black Bishop -> 512
-      | Black Rook -> 576
-      | Black Queen -> 640
-      | Black King -> 704
+      | White Pawn | Black Pawn -> 0
+      | White Knight | Black Knight -> 64
+      | White Bishop | Black Bishop -> 128
+      | White Rook | Black Rook -> 192
+      | White Queen | Black Queen -> 256
+      | White King | Black King -> 320
     in
     let pc_val pc = match pc with
       | White pc -> 1.0
