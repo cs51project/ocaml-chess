@@ -1,96 +1,27 @@
-*
-{
-    font-family: 'Helvetica Neue', Helvetica, sans-serif;
-    user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-}
-
-h1#heading
-{
-    text-align: center;
-    font-weight: 100;
-    font-size: 3em;
-}
-
-div#board-container
-{
-    position: relative;
-    margin-left: auto;
-    margin-right: auto;
-    width: 640px;
-    height: 640px;
-    border: 1px solid #05A;
-    -webkit-transition: -webkit-transform 3s ease-in-out;
-}
-
-table#board
-{
-    table-layout: fixed;
-    border-collapse: collapse;
-    width: 640px;
-    height: 640px;
-    text-align: center;
-    padding: 0px;
-    font-weight: 100;
-}
-
-table#board td:hover
-{
-    box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
-    -webkit-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
-    -moz-box-shadow: inset 0 0 2px #0AF, inset 0 0 2px #0AF;
-}
-
-div.piece-container
-{
-    position: relative;
-    margin-left: auto;
-    margin-right: auto;
-    user-drag: element;
-    -webkit-user-drag: element;
-    height: 45px;
-    width: 45px;
-}
-
-button[type=reset]
-{
-    display: block;
-    position: relative;
-    margin-top: 10px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 90px;
-    height: 35px;
-    border-radius: 17px;
-    padding: 0;
-    border: none;
-    background-color: #09F;
-    font-size: 16px;
-    transition: color 0.1s ease-in;
-    -webkit-transition: color 0.1s ease-in;
-    -moz-transition: color 0.1s ease-in;
-    box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -17px 35px rgba(64, 0, 64, 0.35);
-    -webkit-box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -17px 35px rgba(64, 0, 64, 0.35);
-    -moz-box-shadow: 0 1px 2px rgba(36, 36, 36, 0.5),
-        inset 0 -17px 15px rgba(64, 0, 64, 0.35);
-    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
-}
-
-button[type=reset]::-moz-focus-inner
-{
-    border: 0;
-}
-
-button[type=reset]:hover
-{
-    background-color: #1AF;
-}
-
-button[type=reset]:active
-{
-    background-color: #08E;
-    color: #CEF;
-}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>OCaml Chess</title>
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+        <script type="text/javascript" src="js/chess.js"></script>
+        <link rel="shortcut icon" href="images/favicon.ico" />
+    </head>
+    <body>
+        <h1 id="heading">OCaml Chess</h1>
+		<table align="center">
+		<tr>
+			<td><button type="player" onclick="human();">H  vs. H</button></td>
+			<td><button type="player" onclick="computer();">H  vs. C</button></td>
+		</tr>
+		</table>
+        <div id="board-container">
+            <table id="board"></table>
+            <script type="text/javascript">
+            // <![CDATA[
+                initBoard(true);
+            // ]]>
+            </script>
+        </div>
+    </body>
+</html>
