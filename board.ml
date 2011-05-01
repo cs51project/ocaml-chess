@@ -669,7 +669,7 @@ struct
     
   let flipped bd =
     let {pieces; all_pcs; to_play; castling; ep_target} = bd in
-      {pieces; all_pcs; all_pcs $^$ to_play; castling; ep_target}
+      {pieces; all_pcs; to_play = all_pcs $^$ to_play; castling; ep_target}
 
   let rank_masks =
     let rank_mask i = 0x00000000000000FFL $<<$ (8 * i) in
@@ -691,7 +691,11 @@ struct
 
   let f_projection pos = lsb (pos $%$ 0x00000000000000FFL)
   
-  let r_projection pos = lsb (pos $/$ (r_projection pos))
+  let r_projection pos = lsb (pos $/$ (f_projection pos))
+  
+  let diag_proj pos = lsb (pos $%$ 0x1FFL)
+  
+  let diag_proj2 pos = lsb (pos $%$ 0x7FL)
 
   let rank pos = (r_projection pos) $*$ 0x00000000000000FFL
   
@@ -736,7 +740,7 @@ struct
         0x1000000000000000L   (* black king *)
       |] in
     let all = Array.fold_left ($|$) 0L init_bits in
-    let white = Array.fold_left ($|$) 0L (Array.sub 0 6 init_bits) in
+    let white = Array.fold_left ($|$) 0L (Array.sub init_bits 0 6) in
     let cas = wKingside $|$ wQueenside $|$ bKingside $|$ bQueenside
     in  {
           pieces = init_bits;
@@ -763,12 +767,12 @@ struct
       (if r $&$ 0x0101000001010000L != 0L then 2 else 0) +
       (if r $&$ 0x0100010001000100L != 0L then 1 else 0) in
     let file =
-      (if r $&$ 0xF0 != 0L then 4 else 0) +
-      (if r $&$ 0xCC != 0L then 2 else 0) +
-      (if r $&$ 0xAA != 0L then 1 else 0)
+      (if f $&$ 0xF0L != 0L then 4 else 0) +
+      (if f $&$ 0xCCL != 0L then 2 else 0) +
+      (if f $&$ 0xAAL != 0L then 1 else 0)
     in (rank, file)
 
-  let fen_to_pos =
+  let fen_to_pos str =
     if str = "-" || String.length str != 2 then None
     else
       let f = String.get str 0 in
@@ -981,7 +985,6 @@ struct
     in Array.fold_left (@) [] nested_pcs
 
   let pawn_moves bd pos =
-    let bits = bd.pieces in
     let (forward, l_mask, r_mask, start_rank) =
       let nlt = Int64.lognot (file_masks.(0)) in
       let nrt = Int64.lognot (file_masks.(7)) in
@@ -1003,7 +1006,6 @@ struct
       fwd_by_one $|$ fwd_by_two $|$ captures
 
   let knight_moves bd pos =
-    let bits = bd.pieces in
     let empty = Int64.lognot bd.all_pcs in
     let opponent = opponent bd in
     let mask =
@@ -1015,7 +1017,7 @@ struct
       ((pos $>>$ 24) $*$ 0x0000000000044280L) $|$
       ((pos $*$ 0x0000000000044280L) $>>$ 24)) $&$ mask
     in
-      moves $&$ (opp_pcs $|$ empty)
+      moves $&$ (opponent $|$ empty)
 
   let rook_moves bd pos =
     let empty = Int64.lognot bd.all_pcs in
@@ -1046,7 +1048,6 @@ struct
   let queen_moves bd pos = rook_moves bd pos $|$ bishop_moves bd pos
   
   let king_moves bd pos =
-    let bits = bd.pieces in
     let empty = Int64.lognot bd.all_pcs in
     let opponent = opponent bd in
     let mask =
@@ -1057,7 +1058,7 @@ struct
       ((pos $*$ 0x0000000000000102L) $|$ 
       ((pos $>>$ 16) $*$ 0x000000000028100L) $|$
       ((pos $*$ 0x0000000000028100L) $>>$ 16)) $&$ mask
-    in moves $&$ (opp_pcs $|$ empty)
+    in moves $&$ (opponent $|$ empty)
   
   let moves_of pc =
     match pc with
@@ -1112,25 +1113,23 @@ struct
       (if bm $&$ src = 0L then 0L else dest)) pieces
     in
     let castling' = castling $^$ (castling $&$ mv) in
-    let pawn = (dest $&$ pieces.(0) $&$ 0xFF000000L) $|$ 
     let ep_target' =
-      ((dest $&$ pieces.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
-      ((dest $&$ pieces.(6) $&$ 0x00FF000000000000L) $<<$ 8)
-    in
-      {
-        pieces = pieces';
-        all_pcs = all_pcs';
-        to_play = to_play'';
-        castling = castling';
-        ep_target = ep_target'
-      }
+      ((dest $&$ pieces'.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
+      ((dest $&$ pieces'.(6) $&$ 0x000000FF00000000L) $<<$ 8)
+    in  {
+          pieces = pieces';
+          all_pcs = all_pcs';
+          to_play = to_play'';
+          castling = castling';
+          ep_target = ep_target'
+        }
 
   let check bd =
     let king = (bd.pieces.(5) $|$ bd.pieces.(11)) $&$ bd.to_play in
     let enemy_pawns = (bd.pieces.(0) $|$ bd.pieces.(6)) $^$ bd.to_play in
     let enemy_knights = (bd.pieces.(1) $|$ bd.pieces.(7)) $^$ bd.to_play in
     let enemy_bishops = (bd.pieces.(2) $|$ bd.pieces.(8)) $^$ bd.to_play in
-    let enemy_rooks = (bd.pieces.(3) $|$ bd.pieces.(9))) $^$ bd.to_play in
+    let enemy_rooks = (bd.pieces.(3) $|$ bd.pieces.(9)) $^$ bd.to_play in
     let enemy_queen = (bd.pieces.(4) $|$ bd.pieces.(10)) $^$ bd.to_play in
     let enemy_king = (bd.pieces.(5) $|$ bd.pieces.(11)) $^$ bd.to_play in
       ((knight_moves king $&$ enemy_knights) $|$
@@ -1145,7 +1144,7 @@ struct
       else Some bd'
     else None
 
-  let all_moves bd =
+  let all_moves bd = []
 
   let checkmate bd = check bd && all_moves bd = []
 end
