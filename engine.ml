@@ -170,7 +170,7 @@ struct
       | White pc -> 1.0
       | Black pc -> -1.0
     in
-    let input = Array.make 768 0 in
+    let input = Array.make 384 0 in
     let pieces = B.all_pieces bd in
     let add_to_array (pos, pc) = 
       let (rank, file) = B.pos_to_coord pos in
