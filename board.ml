@@ -611,7 +611,7 @@ struct
     else all_moves bd = []
 end
 
-
+(*
 module BitBoard : BOARD =
 struct
   type bitmask = int64
@@ -1176,6 +1176,6 @@ struct
 
   let checkmate bd = check bd && all_moves bd = []
 end
-
+*)
 
 module StdBoard : BOARD = MapBoard
