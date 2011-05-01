@@ -17,7 +17,7 @@ sig
   val negate : value -> value
   val init_eval : evaluator (* standard evaluator *)
   val apply : evaluator -> board -> value
-  val train : evaluator -> evaluator (* learning function *)
+  val train : evaluator -> board -> value -> evaluator (* learning function *)
 end
 
 module type ENGPARAMS =
@@ -103,7 +103,7 @@ struct
     let (rank,file) = B.pos_to_coor pos in
     match pc with
       | B.Black pt -> (get_table pt).(rank).(file)
-      | B.White pt -> (get_table pt).(7-rank).(7-file)
+      | B.White pt -> (get_table pt).(7 - rank).(7 - file)
 
   let comp a b =
     match (a, b) with
@@ -140,7 +140,7 @@ struct
     let ckmt = if (B.checkmate bd) then -100000 else 0 in
     let eval_binding r (pos, pc) = r + (pc_val pc) + (value_of_pos pos pc) in
       Finite(ck + ckmt + List.fold_left eval_binding 0 pcs)
-  let train eval = eval
+  let train eval bd v = eval
 end
 
 module NNEval (B : BOARD) (N : NN) : (EVAL with type board = B.board) =
@@ -156,15 +156,21 @@ struct
       else if result = 0 then Order.Equal
       else Order.Greater
   let negate = ( *. ) (-1.0)
-  let init_eval = N.create 768 32 1 
-  let apply (e: evaluator) (bd: board) : value =
+  let init_eval = N.create 768 32 1
+  let translate bd =
     let pc_index pc = match pc with
-      | Pawn -> 0
-      | Bishop -> 64
-      | Knight -> 128
-      | Rook -> 192
-      | Queen -> 256
-      | King -> 320
+      | White Pawn -> 0
+      | White Knight -> 64
+      | White Bishop -> 128
+      | White Rook -> 192
+      | White Queen -> 256
+      | White King -> 320
+      | Black Pawn -> 384
+      | Black Knight -> 448
+      | Black Bishop -> 512
+      | Black Rook -> 576
+      | Black Queen -> 640
+      | Black King -> 704
     in
     let pc_val pc = match pc with
       | White pc -> 1.0
@@ -177,8 +183,11 @@ struct
 	    Array.set input (pc_index pc + rank + file * 8) (pc_val pc)
     in
     let _ = List.map add_to_array pieces in
-      (N.eval e input).(0)
-  let train = 
+      input
+  let apply (e: evaluator) (bd: board) : value =
+    let input = translate bd in (N.eval e input).(0)
+  let train eval bd v =
+    let input = translate bd in N.train eval input [|v|]
 end
 
 (* an engine using minimax search based on an evaluator *)
@@ -192,44 +201,44 @@ struct
   type move = B.move
   type evaluator = L.evaluator
 
-  let score eval strat1 strat2 bd =
-    let rec signed_score bd strat1 strat2 color n =
-      let sign =
-        match (color, B.to_play bd) with
-          | (B.Black _, B.Black _) | (B.White _, B.White _) -> (fun x -> x)
-          | (B.Black _, B.White _) | (B.White _, B.Black _) -> L.negate
-      in
-        if n = 0 then sign (L.apply eval bd)
-        else
-          match strat1 bd with
-            | None -> sign (L.apply eval bd)
-            | Some mv ->
+  let rec score eval bd =
+    let rec score_r n bd =
+      if n <= 0 then L.apply eval bd
+      else
+        let rec score_moves v mvs =
+          match mvs with
+            | [] -> L.lbound
+            | mv :: tl ->
                 match B.play bd mv with
-                  | None -> sign (L.apply eval bd)
-                  | Some bd2 -> signed_score bd2 strat2 strat1 color (n - 1)
-    in
-      signed_score bd strat1 strat2 (B.to_play bd) R.depth
+                  | None -> score_moves v tl
+                  | Some result ->
+                      let v' = L.negate (score_r (n - 1) result) in
+                        match L.comp v' v with
+                          | Order.Less | Order.Equal -> v
+                          | Order.Equal -> 
+                          | Order.Greater -> v'
+        in score_moves a b (B.all_moves bd)
+    in score_r R.depth L.ubound L.lbound bd
   
-  let rec best_against strat eval bd =
-    let score = score eval strat (best_against strat eval) in
-    let choose_move mv1 mv2 =
-      match mv1 with
-        | None -> Some mv2
-        | Some mv1 ->
-            match (B.play bd mv1, B.play bd mv2) with
-              | (None, None) -> None
-              | (Some _, None) -> Some mv1
-              | (None, Some _) -> Some mv2
-              | (Some bd1, Some bd2) ->
-                  match L.comp (score bd1) (score bd2) with
-                    | Order.Less | Order.Equal -> Some mv1
-                    | Order.Greater -> Some mv2
+  let rec strat eval bd =
+    let _ = Random.self_init () in
+    let eval_move mv =
+      match mv with
+        match B.play bd mv with
+          | None -> (mv, L.lbound)
+          | Some bd -> (mv, L.score eval bd)
+    in
+    let choose_move (mv1, v1) (mv2, v2) =
+      match L.comp v1 v2 with
+        | Less -> (mv1, v1)
+        | Equal -> if Random.bool() then (mv1, v1) else (mv2, v2)
+        | Greater -> (mv2, v2)
     in
       match B.all_moves bd with
         | [] -> None
-        | hd :: tl -> List.fold_left choose_move (Some hd) tl
-  
-  let rec strat eval = best_against (strat eval) eval
+        | mv :: tl -> 
+            let evaluated = List.map eval_move mvs in
+              List.fold_left choose_move (eval_move mv) tl
 end
 
 (* an engine using alpha-beta search based on an evaluator *)
@@ -259,29 +268,32 @@ struct
                       let v = L.negate (score_r (n - 1) rec_a rec_b result) in
                         match (L.comp a v, L.comp b v) with
                           | (Order.Less, Order.Less) -> a
-                          | (Order.Less, _) -> score_moves v b tl
+                          | (Order.Less, _) ->
+                              score_moves v b tl
                           | (Order.Greater, _) | (Order.Equal, _) ->
                               score_moves a b tl
         in score_moves a b (B.all_moves bd)
     in score_r R.depth L.ubound L.lbound bd
   
   let rec strat eval bd =
-    let choose_move mv1 mv2 =
-      match mv1 with
-        | None -> Some mv2
-        | Some mv1 ->
-            match (B.play bd mv1, B.play bd mv2) with
-              | (None, None) -> None
-              | (Some _, None) -> Some mv1
-              | (None, Some _) -> Some mv2
-              | (Some bd1, Some bd2) ->
-                  match L.comp (score eval bd1) (score eval bd2) with
-                    | Order.Less | Order.Equal -> Some mv1
-                    | Order.Greater -> Some mv2
+    let _ = Random.self_init () in
+    let eval_move mv =
+      match mv with
+        match B.play bd mv with
+          | None -> (mv, L.lbound)
+          | Some bd -> (mv, L.score eval bd)
+    in
+    let choose_move (mv1, v1) (mv2, v2) =
+      match L.comp v1 v2 with
+        | Less -> (mv1, v1)
+        | Equal ->  if Random.bool () then (mv1, v1) else (mv2, v2)
+        | Greater -> (mv2, v2)
     in
       match B.all_moves bd with
         | [] -> None
-        | hd :: tl -> List.fold_left choose_move (Some hd) tl
+        | mv :: tl -> 
+            let evaluated = List.map eval_move mvs in
+              List.fold_left choose_move (eval_move mv) tl
 end
 
 (* Standard synonyms so we can easily change implementation *)

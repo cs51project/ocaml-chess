@@ -5,7 +5,7 @@ sig
   type t
   val create : int -> int -> int -> t
   val eval : t -> input -> output
-  val train : t -> (input * output) list -> t
+  val train : t -> input -> output -> t
 end
 
 (* feedforward neural network trained via backpropagation *)
@@ -70,7 +70,7 @@ struct
     snd (feed_forward nn data)
 
   (* SEE R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996 *)
-  let backprop rate nn (sample, expected) =
+  let backprop rate nn sample expected =
     let (o1, o2) = feed_forward nn sample in
     let err = sub o2 expected in
     let d2 = Array.map (fun x -> (1.0 -. x *. x) /. 2.0) o2 in
@@ -83,8 +83,8 @@ struct
       (sample.(i) *. delta1.(j) *. rate)) w1_i) nn.w1
     in {w1 = w1'; w2 = w2'}
 
-  let train nn patterns =
-    List.fold_left (backprop 0.1) nn patterns
+  let train nn sample expected =
+    backprop 0.1 nn sample expected
 end
 
 (* feedforward neural network trained via parallel backpropagation *)

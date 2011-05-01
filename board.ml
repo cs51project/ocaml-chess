@@ -652,10 +652,24 @@ struct
   let bKingside = 0xF000000000000000L
   let bQueenside = 0x1D00000000000000L
   
+  let wK_mask = 0x0000000000000060L
+  let wQ_mask = 0x000000000000000EL
+  let bK_mask = 0x6000000000000000L
+  let bQ_mask = 0x0E00000000000000L
+  
+  let wK_checkmask = 0x0000000000000070L
+  let wQ_checkmask = 0x000000000000001CL
+  let bK_checkmask = 0x7000000000000000L
+  let bQ_checkmask = 0x1C00000000000000L
+  
   (*********** functions for manipulating bitmasks ***********)
   
   let opponent bd =
     bd.all_pcs $^$ bd.to_play
+    
+  let flipped bd =
+    let {pieces; all_pcs; to_play; castling; ep_target} = bd in
+      {pieces; all_pcs; all_pcs $^$ to_play; castling; ep_target}
 
   let rank_masks =
     let rank_mask i = 0x00000000000000FFL $<<$ (8 * i) in
@@ -672,6 +686,8 @@ struct
     if mask = 0L then u
     else let pos = lsb mask in
       fold f (f u pos) (mask $^$ pos)
+
+  let msb mask = fold (fun u pos -> pos) 0L mask
 
   let f_projection pos = lsb (pos $%$ 0x00000000000000FFL)
   
@@ -956,20 +972,13 @@ struct
     then Black King
     else White King
 
-  let piece_at bd pos =
-    let (bits, _) = bd in
-    let occupied_by = occupied bits rank file in
-    let pass1 = Array.mapi (fun i _ -> (i + 1) * (occupied_by i)) bits in
-      index_to_piece ((Array.fold_left (+) 0 bits) - 1)
-
   let all_pieces bd =
-    let 
-    let all_pieces_r pcs rank file =
-      if rank >= 8 then pcs
-      else if file >= 8 then all_pieces_r pcs (rank + 1) 0
-      else match piece_at bd rank file with
-        | None -> all_pieces_r pcs rank (file + 1)
-        | Some pc -> all_pieces_r (pc :: pcs) rank (file + 1)
+    let deconstruct pc mask =
+      fold (fun lst pos -> (pos, pc) :: lst) mask in
+    let nested_pcs =
+      Array.mapi (fun i mask -> deconstruct 
+      (index_to_piece i) mask) bd.pieces
+    in Array.fold_left (@) [] nested_pcs
 
   let pawn_moves bd pos =
     let bits = bd.pieces in
@@ -1015,10 +1024,10 @@ struct
     let down_left = pos $-$ 0x1L in
     let r_obstructions = bd.all_pcs $&$ rank pos in
     let f_obstructions = bd.all_pcs $&$ file pos in
-    let rR = (lsb (up_right $&$ r_obstructions)) $-$ pos in
-    let rL = pos $-$ msb (down_left $&$ r_obstructions) in
-    let fU = (lsb (up_right $&$ f_obstructions)) $-$ pos in
-    let fD = pos $-$ msb (down_left $&$ f_obstructions) in
+    let rR = ((lsb (up_right $&$ r_obstructions)) $-$ pos) $&$ up_right in
+    let rL = (pos $-$ msb (down_left $&$ r_obstructions)) $&$ down_left in
+    let fU = ((lsb (up_right $&$ f_obstructions)) $-$ pos) $&$ up_right in
+    let fD = (pos $-$ msb (down_left $&$ f_obstructions)) $&$ down_left in
       (rR $|$ rL $|$ fU $|$ fD) $&$ (empty $|$ opponent)
   
   let bishop_moves bd pos =
@@ -1028,10 +1037,10 @@ struct
     let down_left = pos $-$ 0x1L in
     let ne_obstructions = bd.all_pcs $&$ diag_ne pos in
     let nw_obstructions = bd.all_pcs $&$ diag_nw pos in
-    let neU = (lsb (up_right $&$ ne_obstructions)) $-$ pos in
-    let neD = pos $-$ msb (down_left $&$ ne_obstructions) in
-    let nwU = (lsb (up_right $&$ nw_obstructions)) $-$ pos in
-    let nwD = pos $-$ msb (down_left $&$ nw_obstructions) in
+    let neU = ((lsb (up_right $&$ ne_obstructions)) $-$ pos) $&$ up_right in
+    let neD = (pos $-$ msb (down_left $&$ ne_obstructions)) $&$ down_left in
+    let nwU = ((lsb (up_right $&$ nw_obstructions)) $-$ pos) $&$ up_right in
+    let nwD = (pos $-$ msb (down_left $&$ nw_obstructions)) $&$ down_left in
       (neU $|$ neD $|$ nwU $|$ nwD) $&$ (empty $|$ opponent)
   
   let queen_moves bd pos = rook_moves bd pos $|$ bishop_moves bd pos
@@ -1048,12 +1057,43 @@ struct
       ((pos $*$ 0x0000000000000102L) $|$ 
       ((pos $>>$ 16) $*$ 0x000000000028100L) $|$
       ((pos $*$ 0x0000000000028100L) $>>$ 16)) $&$ mask
-    in
-      moves $&$ (opp_pcs $|$ empty)
+    in moves $&$ (opp_pcs $|$ empty)
   
-  let castles =
-
-  let generate_moves bd pos =
+  let moves_of pc =
+    match pc with
+      White Pawn | Black Pawn -> pawn_moves
+      White Knight | Black Knight -> knight_moves
+      White Bishop | Black Bishop -> bishop_moves
+      White Rook | Black Rook -> rook_moves
+      White Queen | Black Queen -> queen_moves
+      White King | Black King -> king_moves
+  
+  let generate_targets bd =
+    let targets pc mask =
+      fold (fun tgts pos -> (moves_of pc bd pos) $|$ tgts) mask in
+    let active_pieces = match to_play bd with
+      | White _ -> Array.sub 0 6 bd.pieces
+      | Black _ -> Array.sub 6 6 bd.pieces
+    in
+    let nested_tgts =
+      Array.mapi (fun i mask -> targets 
+      (index_to_piece i) mask) active_pieces
+    in Array.fold_left ($|$) 0L nested_tgts
+  
+  let castles bd =
+    let (kingside, queenside) = match to_play bd with
+      | White _ -> (wKingside, wQueenside)
+      | Black _ -> (bKingside, bQueenside)
+    in
+    let ks_allowed = (kingside $&$ bd.castling = kingside) in
+    let qs_allowed = (queenside $&$ bd.castling = queenside) in
+    let attacked = generate_targets (flipped bd) in
+    let ks_clear = ks_mask $&$ bd.all_pcs = 0L in
+    let qs_clear = qs_mask $&$ bd.all_pcs = 0L in
+    let ks_unchecked = ks_checkmask $&$ attacked = 0L in
+    let qs_unchecked = qs_checkmask $&$ attacked = 0L in
+      (if ks_allowed && ks_clear && ks_unchecked then kingside else 0L) $|$
+      (if qs_allowed && qs_clear && qs_unchecked then queenside else 0L)
   
   let is_valid bd mv =
     let src = mv $&$ bd.to_play in
@@ -1096,7 +1136,7 @@ struct
       ((knight_moves king $&$ enemy_knights) $|$
       (bishop_moves king $&$ (enemy_bishops $|$ enemy_queen)) $|$
       (rook_moves king $&$ (enemy_rooks $|$ enemy_queen)) $|$
-      (king_moves king $&$ enemy_king)) > 0x0L
+      (king_moves king $&$ enemy_king)) != 0x0L
 
   let play bd mv =
     if is_valid mv then
@@ -1105,10 +1145,9 @@ struct
       else Some bd'
     else None
 
-  
   let all_moves bd =
 
-  let checkmate bd = check bd && 
+  let checkmate bd = check bd && all_moves bd = []
 end
 
 
