@@ -100,7 +100,7 @@ struct
       | B.King   ->king_table
 
   let value_of_pos pos pc = 
-    let (rank,file) = B.pos_to_coor pos in
+    let (rank,file) = B.pos_to_coord pos in
     match pc with
       | B.Black pt -> (get_table pt).(rank).(file)
       | B.White pt -> (get_table pt).(7 - rank).(7 - file)
@@ -147,7 +147,7 @@ module NNEval (B : BOARD) (N : NN) : (EVAL with type board = B.board) =
 struct
   type board = B.board
   type value = float
-  type evaluator = NN.t
+  type evaluator = N.t
   let ubound = infinity
   let lbound = neg_infinity
   let comp a b =
@@ -159,18 +159,18 @@ struct
   let init_eval = N.create 384 32 1
   let translate bd =
     let pc_index pc = match pc with
-      | White Pawn | Black Pawn -> 0
-      | White Knight | Black Knight -> 64
-      | White Bishop | Black Bishop -> 128
-      | White Rook | Black Rook -> 192
-      | White Queen | Black Queen -> 256
-      | White King | Black King -> 320
+      | B.White B.Pawn | B.Black B.Pawn -> 0
+      | B.White B.Knight | B.Black B.Knight -> 64
+      | B.White B.Bishop | B.Black B.Bishop -> 128
+      | B.White B.Rook | B.Black B.Rook -> 192
+      | B.White B.Queen | B.Black B.Queen -> 256
+      | B.White B.King | B.Black B.King -> 320
     in
     let pc_val pc = match pc with
-      | White pc -> 1.0
-      | Black pc -> -1.0
+      | B.White pc -> 1.0
+      | B.Black pc -> -1.0
     in
-    let input = Array.make 384 0 in
+    let input = Array.make 384 0.0 in
     let pieces = B.all_pieces bd in
     let add_to_array (pos, pc) = 
       let (rank, file) = B.pos_to_coord pos in
@@ -210,29 +210,25 @@ struct
                         match L.comp v' v with
                           | Order.Less | Order.Equal -> v
                           | Order.Greater -> v'
-        in score_moves a b (B.all_moves bd)
-    in score_r R.depth L.ubound L.lbound bd
+        in score_moves L.lbound (B.all_moves bd)
+    in score_r R.depth bd
   
   let rec strat eval bd =
     let _ = Random.self_init () in
     let eval_move mv = match B.play bd mv with
       | None -> (mv, L.lbound)
-      | Some bd -> (mv, L.score eval bd) in
-    let eval_move mv = match B.play bd mv with
-      | None -> (mv, L.lbound)
-      | Some bd -> (mv, L.score eval bd)
-    in
+      | Some bd -> (mv, score eval bd) in
     let choose_move (mv1, v1) (mv2, v2) =
       match L.comp v1 v2 with
-        | Less -> (mv1, v1)
-        | Equal -> if Random.bool() then (mv1, v1) else (mv2, v2)
-        | Greater -> (mv2, v2)
+        | Order.Less -> (mv1, v1)
+        | Order.Equal -> if Random.bool() then (mv1, v1) else (mv2, v2)
+        | Order.Greater -> (mv2, v2)
     in
       match B.all_moves bd with
         | [] -> None
         | mv :: tl -> 
-            let evaluated = List.map eval_move mvs in
-              List.fold_left choose_move (eval_move mv) tl
+            let evaluated = List.map eval_move tl in
+              List.fold_left choose_move (eval_move mv) evaluated
 end
 
 (* an engine using alpha-beta search based on an evaluator *)
@@ -284,8 +280,8 @@ struct
       match B.all_moves bd with
         | [] -> None
         | mv :: tl -> 
-            let evaluated = List.map eval_move mvs in
-              List.fold_left choose_move (eval_move mv) tl
+            let evaluated = List.map eval_move tl in
+              List.fold_left choose_move (eval_move mv) evaluated
 end
 
 (* Standard synonyms so we can easily change implementation *)
