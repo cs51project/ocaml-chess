@@ -226,9 +226,8 @@ struct
     in
       match B.all_moves bd with
         | [] -> None
-        | mv :: tl ->
-            let evaluated = List.map eval_move tl in
-              List.fold_left choose_move (eval_move mv) evaluated
+        | mv :: tl -> let evaluated = List.map eval_move tl in
+            Some (fst (List.fold_left choose_move (eval_move mv) evaluated))
 end
 
 (* an engine using alpha-beta search based on an evaluator *)
@@ -267,21 +266,19 @@ struct
   
   let rec strat eval bd =
     let _ = Random.self_init () in
-    let eval_move mv =
-      match B.play bd mv with
-        | None -> (mv, L.lbound)
-        | Some bd -> (mv, L.score eval bd) in
+    let eval_move mv = match B.play bd mv with
+      | None -> (mv, L.lbound)
+      | Some bd -> (mv, score eval bd) in
     let choose_move (mv1, v1) (mv2, v2) =
       match L.comp v1 v2 with
-        | Less -> (mv1, v1)
-        | Equal ->  if Random.bool () then (mv1, v1) else (mv2, v2)
-        | Greater -> (mv2, v2)
+        | Order.Less -> (mv1, v1)
+        | Order.Equal -> if Random.bool() then (mv1, v1) else (mv2, v2)
+        | Order.Greater -> (mv2, v2)
     in
       match B.all_moves bd with
         | [] -> None
-        | mv :: tl -> 
-            let evaluated = List.map eval_move tl in
-              List.fold_left choose_move (eval_move mv) evaluated
+        | mv :: tl -> let evaluated = List.map eval_move tl in
+            Some (fst (List.fold_left choose_move (eval_move mv) evaluated))
 end
 
 (* Standard synonyms so we can easily change implementation *)
