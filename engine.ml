@@ -100,7 +100,7 @@ struct
       | B.King   ->king_table
 
   let value_of_pos pos pc = 
-    let (rank,file) = B.pos_to_coor pos in
+    let (rank,file) = B.pos_to_coord pos in
     match pc with
       | B.Black pt -> (get_table pt).(rank).(file)
       | B.White pt -> (get_table pt).(7 - rank).(7 - file)
@@ -147,7 +147,7 @@ module NNEval (B : BOARD) (N : NN) : (EVAL with type board = B.board) =
 struct
   type board = B.board
   type value = float
-  type evaluator = NN.t
+  type evaluator = N.t
   let ubound = infinity
   let lbound = neg_infinity
   let comp a b =
@@ -215,17 +215,10 @@ struct
   
   let rec strat eval bd =
     let _ = Random.self_init () in
-<<<<<<< HEAD
-    let eval_move mv =
-      match B.play bd mv with
-	| None -> (mv, L.lbound)
-        | Some bd -> (mv, L.score eval bd) in
-=======
     let eval_move mv = match B.play bd mv with
-      | None -> (mv, L.lbound)
-      | Some bd -> (mv, L.score eval bd)
+	| None -> (mv, L.lbound)
+        | Some bd -> (mv, L.score eval bd) 
     in
->>>>>>> 11d0ffdb4b58b93df9154501831425477228aa80
     let choose_move (mv1, v1) (mv2, v2) =
       match L.comp v1 v2 with
         | Less -> (mv1, v1)
@@ -236,7 +229,7 @@ struct
         | [] -> None
         | mv :: tl -> 
             let evaluated = List.map eval_move mvs in
-              List.fold_left choose_move (eval_move mv) tl
+              List.fold_left choose_move (eval_move mv) evaluated
 end
 
 (* an engine using alpha-beta search based on an evaluator *)
