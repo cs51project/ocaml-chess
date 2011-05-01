@@ -216,9 +216,8 @@ struct
   let rec strat eval bd =
     let _ = Random.self_init () in
     let eval_move mv = match B.play bd mv with
-	| None -> (mv, L.lbound)
-        | Some bd -> (mv, L.score eval bd) 
-    in
+      | None -> (mv, L.lbound)
+      | Some bd -> (mv, L.score eval bd) in
     let choose_move (mv1, v1) (mv2, v2) =
       match L.comp v1 v2 with
         | Less -> (mv1, v1)
