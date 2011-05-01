@@ -86,4 +86,3 @@ struct
   let train nn sample expected =
     backprop 0.1 nn sample expected
 end
-
