@@ -271,7 +271,7 @@ function handleDragOver(evt)
     return true;
 }
 
-function handleDrop(elt, evt, hoc)
+function handleDrop(elt, evt)
 {
     var sq1 = evt.dataTransfer.getData("text/plain").toLowerCase();
     var sq2 = elt.id.toLowerCase();
@@ -290,19 +290,13 @@ function handleDrop(elt, evt, hoc)
     }
     else
         moveText = sq1 + sq2;
-    
-	if(hoc == true)
-	{
-		submitMove(moveText);
-	}
-	else
-	{
-		submitMoveAgainstSelf(moveText);
-	}	
+            
+    submitMove(moveText);
+    //submitMoveAgainstSelf(moveText);
 }
 
 // load and display a board
-function loadBoard(bd, hoc)
+function loadBoard(bd)
 {
     board = bd;
     
@@ -326,11 +320,11 @@ function loadBoard(bd, hoc)
                     "; color: " + color + ";' " +
                     "ondragenter='handleDragEnter(event)' " + 
                     "ondragover='handleDragOver(event)' " +
-                    "ondrop='handleDrop(this, event, hoc);'>";
+                    "ondrop='handleDrop(this, event);'>";
             
             html += "<div class='piece-container' draggable='true' " +
                     "ondragstart='handleDragStart(event)' " +
-                    "onDrop='handleDrop(this.parentNode, event, hoc);'>";
+                    "onDrop='handleDrop(this.parentNode, event);'>";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
@@ -351,18 +345,8 @@ function loadBoard(bd, hoc)
     boardView.innerHTML = html;
 }
 
-function initBoard(hoc)
+function initBoard()
 {
     var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
-    loadBoard(new Board(fen), hoc);
-}
-
-function computer()
-{
-	initBoard(true);
-}
-
-function human()
-{
-	initBoard(false);
+    loadBoard(new Board(fen));
 }

@@ -1125,6 +1125,9 @@ struct
       dest $&$ generate_moves bd src != 0x0L
 
   let exec bd mv =
+    match mv with
+      | Standard (src, dest) -> exec_standard src dest
+      | Castle _ -> exec_castle mv
     let {pieces; all_pcs; to_play; castling; ep_target} = bd in
     let src = mv $&$ to_play in
     let dest = mv $^$ src in
@@ -1159,7 +1162,17 @@ struct
       else Some bd'
     else None
 
-  let all_moves bd = []
+  let movelist_of pc bd pos =
+    let moves = moves_of pc bd pos in
+      fold (fun u dest -> Standard(pos, dest) :: u) [] moves
+
+  let all_moves bd =
+    let all_moves_by index pc_mask =
+      let pc = index_to_piece index in
+        fold (fun u pos -> movelist_of pc bd pos @ u) [] pc_mask
+    in
+    let prelim = Array.fold_left (@) [] (Array.mapi all_moves_by bd.pieces) in
+      List.filter (fun mv -> play bd mv != None) prelim
 
   let checkmate bd = check bd && all_moves bd = []
 end
