@@ -51,7 +51,7 @@ struct
     [| 5;  5;  10;  27;  27;  10;   5;  5|];
     [|10; 10;  20;  30;  30;  20;  10; 10|];
     [|50; 50;  50;  50;  50;  50;  50; 50|];
-    [| 0;  0;   0;   0;   0;   0;   0;  0|]
+    [|50; 50;  50;  50;  50;  50;  50; 50|]
   |]
 
   let knight_table =
@@ -90,20 +90,32 @@ struct
     [|-30; -40; -40; -50; -50; -40; -40; -30|]
   |]
 
+ let empty_table =
+  [|
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|];
+    [| 0;  0;  0;   0;   0;  0;  0;  0|]
+  |]
+
   let get_table pct = 
     match pct with
       | B.Pawn ->  pawn_table
       | B.Knight ->knight_table
       | B.Bishop ->bishop_table
-      | B.Rook   ->pawn_table
-      | B.Queen  ->pawn_table
-      | B.King   ->king_table
+      | B.Rook   ->empty_table
+      | B.Queen  ->empty_table
+      | B.King   ->empty_table
 
   let value_of_pos pos pc = 
     let (rank,file) = B.pos_to_coord pos in
     match pc with
-      | B.Black pt -> (get_table pt).(rank).(file)
-      | B.White pt -> (get_table pt).(7 - rank).(7 - file)
+      | B.Black pt -> (get_table pt).(7 - rank).(7 - file)
+      | B.White pt -> (get_table pt).(rank).(file)
 
   let comp a b =
     match (a, b) with

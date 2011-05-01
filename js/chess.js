@@ -271,6 +271,21 @@ function handleDragOver(evt)
     return true;
 }
 
+function switchToHVC()
+{
+	submitMoveDependent = function(move){submitMove(move);};
+}
+
+function switchToHVH()
+{
+	submitMoveDependent = function(move){submitMoveNoFollowup(move);};
+}
+
+function submitMoveDependent(move)
+{
+	submitMove(move);
+}
+
 function handleDrop(elt, evt)
 {
     var sq1 = evt.dataTransfer.getData("text/plain").toLowerCase();

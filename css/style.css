@@ -53,7 +53,7 @@ div.piece-container
     width: 45px;
 }
 
-button[type=reset]
+button[type=reset], button.change-mode
 {
     display: block;
     position: relative;
@@ -79,17 +79,18 @@ button[type=reset]
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
-button[type=reset]::-moz-focus-inner
+button[type=reset]::-moz-focus-inner,
+button.change-mode::-moz-focus-inner
 {
     border: 0;
 }
 
-button[type=reset]:hover
+button[type=reset]:hover, button.change-mode:hover
 {
     background-color: #1AF;
 }
 
-button[type=reset]:active
+button[type=reset]:active, button.change-mode:active
 {
     background-color: #08E;
     color: #CEF;
