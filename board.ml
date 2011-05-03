@@ -763,13 +763,13 @@ struct
     let r = r_projection pos in
     let f = f_projection pos in
     let rank =
-      (if r $&$ 0x0101010100000000L != 0L then 4 else 0) +
-      (if r $&$ 0x0101000001010000L != 0L then 2 else 0) +
-      (if r $&$ 0x0100010001000100L != 0L then 1 else 0) in
+      (if r $&$ 0x0101010100000000L <> 0L then 4 else 0) +
+      (if r $&$ 0x0101000001010000L <> 0L then 2 else 0) +
+      (if r $&$ 0x0100010001000100L <> 0L then 1 else 0) in
     let file =
-      (if f $&$ 0xF0L != 0L then 4 else 0) +
-      (if f $&$ 0xCCL != 0L then 2 else 0) +
-      (if f $&$ 0xAAL != 0L then 1 else 0)
+      (if f $&$ 0xF0L <> 0L then 4 else 0) +
+      (if f $&$ 0xCCL <> 0L then 2 else 0) +
+      (if f $&$ 0xAAL <> 0L then 1 else 0)
     in (rank, file)
 
   let piece_to_index pc =
@@ -918,10 +918,10 @@ struct
   
   let castle_to_fen cas =
     let str =
-      (if cas $&$ wKingside != 0L then "K" else "") ^
-      (if cas $&$ wQueenside != 0L then "Q" else "") ^
-      (if cas $&$ bKingside != 0L then "k" else "") ^
-      (if cas $&$ bQueenside != 0L then "q" else "")
+      (if cas $&$ wKingside <> 0L then "K" else "") ^
+      (if cas $&$ wQueenside <> 0L then "Q" else "") ^
+      (if cas $&$ bKingside <> 0L then "k" else "") ^
+      (if cas $&$ bQueenside <> 0L then "q" else "")
     in if str = "" then "-" else str
   
   
@@ -1110,7 +1110,7 @@ struct
   let generate_moves bd pos =
     let moves_by_piece =
       Array.mapi (fun i mask -> moves_of (index_to_piece i)
-      bd (mask $&$ pos)) bd.pieces
+      bd (mask $&$ pos)) (active_pcs bd)
     in Array.fold_left ($|$) 0L moves_by_piece
 
   let current_castles bd =
@@ -1143,7 +1143,7 @@ struct
   
   let is_valid bd mv =
     match mv with
-      | Standard(src, dest) -> dest $&$ generate_moves bd src != 0x0L
+      | Standard(src, dest) -> dest $&$ generate_moves bd src <> 0x0L
       | Castle ctl ->
           let mask = castle_mask bd ctl in castles bd $&$ mask = mask
 
@@ -1152,7 +1152,6 @@ struct
     let {pieces; all_pcs; to_play; castling; ep_target} = bd in
     let to_play' = to_play $^$ mv in
     let all_pcs' = to_play' $|$ (all_pcs $^$ mv) in
-    let to_play'' = all_pcs $^$ to_play' in
     let pieces' = Array.map
       (fun bm -> (bm $&$ mv) $^$ bm $^$
       (if bm $&$ src = 0L then 0L else dest)) pieces
@@ -1164,7 +1163,7 @@ struct
     in  {
           pieces = pieces';
           all_pcs = all_pcs';
-          to_play = to_play'';
+          to_play = to_play';
           castling = castling';
           ep_target = ep_target'
         }
@@ -1196,15 +1195,15 @@ struct
   let check bd =
     let attacked = generate_targets (flipped bd) in
     let king = (bd.pieces.(5) $|$ bd.pieces.(11)) $&$ bd.to_play in
-      king $&$ attacked != 0L
+      king $&$ attacked <> 0L
 
   let play bd mv =
     if is_valid bd mv then
       match exec bd mv with
         | None -> None
         | Some bd' ->
-            (*if check bd' then None
-            else*) Some bd'
+            if check bd' then None
+            else Some (flipped bd')
     else None
 
   let movelist_of pc bd pos =

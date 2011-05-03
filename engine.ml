@@ -253,53 +253,40 @@ struct
   type move = B.move
   type evaluator = L.evaluator
 
-  let rec score eval bd =
-    let rec score_r n a b bd =
-      if n <= 0 then L.apply eval bd
-      else
-        let rec score_moves a b mvs =
-          match mvs with
-            | [] -> a
-            | mv :: tl ->
-                match B.play bd mv with
-                  | None -> score_moves a b tl
-                  | Some result ->
-                      let rec_a = L.negate b in
-                      let rec_b = L.negate a in
-                      let v = L.negate (score_r (n - 1) rec_a rec_b result) in
-                        match (L.comp a v, L.comp b v) with
-                          | (Order.Less, Order.Less) -> a
-                          | (Order.Less, _) ->
-                              score_moves v b tl
-                          | (Order.Greater, _) | (Order.Equal, _) ->
-                              score_moves a b tl
-        in score_moves a b (B.all_moves bd)
-    in score_r R.depth L.ubound L.lbound bd
+  let rec score eval n (mva, a) (mvb, b) bd =
+    if n <= 0 || B.all_moves bd = []
+    then (None, L.apply eval bd)
+    else let rec score_moves (mva, a) (mvb, b) mvs = match mvs with
+      | [] -> (mva, a)
+      | mv :: tl ->
+          match B.play bd mv with
+            | None -> score_moves (mva, a) (mvb, b) tl
+            | Some result ->
+                let rec_a = (mvb, L.negate b) in
+                let rec_b = (mva, L.negate a) in
+                let (_, negv) = score eval (n - 1) rec_a rec_b result in
+                let v = L.negate negv in
+                  match (L.comp a v, L.comp b v) with
+                    | (Order.Less, Order.Less) -> (mva, a)
+                    | (Order.Less, _) ->
+                        score_moves (Some mv, v) (mvb, b) tl
+                    | (Order.Greater, _) | (Order.Equal, _) ->
+                        score_moves (mva, a) (mvb, b) tl
+    in score_moves (mva, a) (mvb, b) (B.all_moves bd)
   
   let rec strat eval bd =
-    let _ = Random.self_init () in
-    let eval_move mv = match B.play bd mv with
-      | None -> (mv, L.lbound)
-      | Some bd -> (mv, score eval bd) in
-    let choose_move (mv1, v1) (mv2, v2) =
-      match L.comp v1 v2 with
-        | Order.Less -> (mv1, v1)
-        | Order.Equal -> if Random.bool() then (mv1, v1) else (mv2, v2)
-        | Order.Greater -> (mv2, v2)
-    in
-      match B.all_moves bd with
-        | [] -> None
-        | mv :: tl -> let evaluated = List.map eval_move tl in
-            Some (fst (List.fold_left choose_move (eval_move mv) evaluated))
+    fst (score eval R.depth (None, L.lbound) (None, L.ubound) bd)
 end
 
 (* Standard synonyms so we can easily change implementation *)
 module StdParams : ENGPARAMS =
 struct
-  let depth = 3
+  let depth = 7
 end
+
 module StdEval : (EVAL with type board = StdBoard.board) =
   SimpleEval (StdBoard)
+
 module StdEngine : (ENGINE with type board = StdBoard.board
                     and type move = StdBoard.move
                     and type evaluator = StdEval.evaluator) =
