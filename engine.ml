@@ -296,7 +296,7 @@ end
 (* Standard synonyms so we can easily change implementation *)
 module StdParams : ENGPARAMS =
 struct
-  let depth = 7
+  let depth = 3
 end
 module StdEval : (EVAL with type board = StdBoard.board) =
   SimpleEval (StdBoard)
