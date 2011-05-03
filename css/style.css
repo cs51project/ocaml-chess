@@ -53,6 +53,13 @@ div.piece-container
     width: 45px;
 }
 
+table#buttons
+{
+    position: relative;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 button[type=reset], button.change-mode
 {
     display: block;

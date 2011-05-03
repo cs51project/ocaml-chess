@@ -9,14 +9,6 @@
     </head>
     <body>
         <h1 id="heading">OCaml Chess</h1>
-        <table align=center>
-          <tr>
-            <th><button class="change-mode" type="button"
-	         onclick="switchToHVC();">H vs. C</button><th>
-            <th><button class="change-mode" type="button"
-	         onclick="switchToHVH();">H vs. H</button><th>
-          </tr>
-        </table>
         <div id="board-container">
             <table id="board"></table>
             <script type="text/javascript">
@@ -25,6 +17,14 @@
             // ]]>
             </script>
         </div>
-        <button type="reset" onclick="initBoard();">Reset</button>
+        <table id="buttons">
+          <tr>
+            <th><button class="change-mode" type="button"
+	          onclick="switchToHVC();">H vs. C</button></th>
+            <th><button type="reset" onclick="initBoard();">Reset</button></th>
+            <th><button class="change-mode" type="button"
+	          onclick="switchToHVH();">H vs. H</button></th>
+	      </tr>
+	    </table>
     </body>
 </html> 
