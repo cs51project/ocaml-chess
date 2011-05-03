@@ -1002,7 +1002,6 @@ struct
           | White _ -> (($<<$), nlt, nrt)
           | Black _ -> (($>>$), nrt, nlt)
     in
-    let opponent = opponent bd in
     let attack_l = forward (pos $&$ l_mask) 7 in
     let attack_r = forward (pos $&$ r_mask) 9 in
       attack_l $|$ attack_r
