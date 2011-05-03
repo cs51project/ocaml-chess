@@ -1203,8 +1203,8 @@ struct
       match exec bd mv with
         | None -> None
         | Some bd' ->
-            if check bd' then None
-            else Some bd'
+            (*if check bd' then None
+            else*) Some bd'
     else None
 
   let movelist_of pc bd pos =
