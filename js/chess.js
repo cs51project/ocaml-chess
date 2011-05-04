@@ -271,19 +271,26 @@ function handleDragOver(evt)
     return true;
 }
 
+var submitMoveDependent = submitMove;
+
 function switchToHVC()
 {
-	submitMoveDependent = function(move){submitMove(move);};
+	submitMoveDependent = submitMove;
+	
+	hvcButton = document.getElementById("mode-hvc");
+	hvhButton = document.getElementById("mode-hvh");
+	hvcButton.className = "mode on";
+	hvhButton.className = "mode off";
 }
 
 function switchToHVH()
 {
-	submitMoveDependent = function(move){submitMoveNoFollowup(move);};
-}
-
-function submitMoveDependent(move)
-{
-	submitMove(move);
+	submitMoveDependent = submitMoveAgainstSelf;
+	
+	hvcButton = document.getElementById("mode-hvc");
+	hvhButton = document.getElementById("mode-hvh");
+	hvcButton.className = "mode off";
+	hvhButton.className = "mode on";
 }
 
 function handleDrop(elt, evt)
@@ -306,8 +313,7 @@ function handleDrop(elt, evt)
     else
         moveText = sq1 + sq2;
             
-    submitMove(moveText);
-    //submitMoveAgainstSelf(moveText);
+    submitMoveDependent(moveText);
 }
 
 // load and display a board

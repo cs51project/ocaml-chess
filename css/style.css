@@ -53,23 +53,22 @@ div.piece-container
     width: 45px;
 }
 
-table#buttons
+div#button-pane
 {
     position: relative;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-button[type=reset], button.change-mode
-{
-    display: block;
-    position: relative;
+    width: 300px;
+    height: 35px;
     margin-top: 10px;
     margin-left: auto;
     margin-right: auto;
-    width: 90px;
+    padding: 0px;
+}
+
+button[type=reset], button.mode
+{
+    width: 100px;
+    float: left;
     height: 35px;
-    border-radius: 17px;
     padding: 0;
     border: none;
     background-color: #09F;
@@ -86,19 +85,31 @@ button[type=reset], button.change-mode
     text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
 }
 
+button#mode-hvc
+{
+    border-top-left-radius: 17px;
+    border-bottom-left-radius: 17px;
+}
+
+button#mode-hvh
+{
+    border-top-right-radius: 17px;
+    border-bottom-right-radius: 17px;
+}
+
 button[type=reset]::-moz-focus-inner,
-button.change-mode::-moz-focus-inner
+button.mode::-moz-focus-inner
 {
     border: 0;
 }
 
-button[type=reset]:hover, button.change-mode:hover
+button[type=reset]:hover, button.mode:hover
 {
     background-color: #1AF;
 }
 
-button[type=reset]:active, button.change-mode:active
+button[type=reset]:active, button.mode:active, button.mode.on
 {
-    background-color: #08E;
+    background-color: #06C;
     color: #CEF;
 }

@@ -17,14 +17,12 @@
             // ]]>
             </script>
         </div>
-        <table id="buttons">
-          <tr>
-            <th><button class="change-mode" type="button"
-	          onclick="switchToHVC();">H vs. C</button></th>
-            <th><button type="reset" onclick="initBoard();">Reset</button></th>
-            <th><button class="change-mode" type="button"
-	          onclick="switchToHVH();">H vs. H</button></th>
-	      </tr>
-	    </table>
+        <div id="button-pane">
+            <button class="mode on" id="mode-hvc" type="button"
+                onclick="switchToHVC();">H vs. C</button>
+            <button type="reset" onclick="initBoard();">Reset</button>
+            <button class="mode off" id="mode-hvh" type="button"
+                onclick="switchToHVH();">H vs. H</button>
+        </div>
     </body>
 </html> 
