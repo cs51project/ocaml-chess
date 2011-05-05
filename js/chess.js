@@ -344,8 +344,7 @@ function loadBoard(bd)
                     "ondrop='handleDrop(this, event);'>";
             
             html += "<div class='piece-container' draggable='true' " +
-                    "ondragstart='handleDragStart(event)' " +
-                    "onDrop='handleDrop(this.parentNode, event);'>";
+                    "ondragstart='handleDragStart(event)'>";
             
             // insert the proper piece into each square
             if(bd != null && bd.pieceAt(rank, file) != null)
