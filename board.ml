@@ -1149,14 +1149,29 @@ struct
 
   let exec_standard bd src dest =
     let mv = src $|$ dest in
-    let {pieces; all_pcs; to_play; castling; ep_target} = bd in
-    let to_play' = to_play $^$ mv in
-    let all_pcs' = to_play' $|$ (all_pcs $^$ mv) in
+    let to_play' = bd.to_play $^$ mv in
+    let all_pcs' = to_play' $|$ (bd.all_pcs $^$ mv) in
     let pieces' = Array.map
       (fun bm -> (bm $&$ mv) $^$ bm $^$
-      (if bm $&$ src = 0L then 0L else dest)) pieces
+      (if bm $&$ src = 0L then 0L else dest)) bd.pieces
     in
-    let castling' = castling $^$ (castling $&$ mv) in
+    let _ = match to_play bd with
+      | White _ ->
+          if src $&$ bd.pieces.(0) = 0L then ()
+          else if dest = bd.ep_target then
+            pieces'.(6) <- (pieces'.(6) $^$ (dest $>>$ 8))
+          else if dest $&$ 0xFF00000000000000L <> 0L then
+            let _ = pieces'.(0) <- (pieces'.(0) $^$ dest) in
+              pieces'.(4) <- (pieces'.(4) $^$ dest)
+      | Black _ ->
+          if src $&$ bd.pieces.(6) = 0L then ()
+          else if dest = bd.ep_target then
+            pieces'.(0) <- (pieces'.(0) $^$ (dest $<<$ 8))
+          else if dest $&$ 0x00000000000000FFL <> 0L then
+            let _ = pieces'.(6) <- (pieces'.(6) $^$ dest) in
+              pieces'.(10) <- (pieces'.(10) $^$ dest)
+    in
+    let castling' = bd.castling $^$ (bd.castling $&$ mv) in
     let ep_target' =
       ((dest $&$ pieces'.(0) $&$ 0x00000000FF000000L) $>>$ 8) $|$
       ((dest $&$ pieces'.(6) $&$ 0x000000FF00000000L) $<<$ 8)

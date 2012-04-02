@@ -252,8 +252,9 @@ struct
   type board = B.board
   type move = B.move
   type evaluator = L.evaluator
+  exception Timeout
 
-  let rec score eval n (mva, a) (mvb, b) bd =
+  let rec score eval n (mva, a) (mvb, b) test_mv bd =
     if n <= 0 || B.all_moves bd = []
     then (None, L.apply eval bd)
     else let rec score_moves (mva, a) (mvb, b) mvs = match mvs with
@@ -264,7 +265,7 @@ struct
             | Some result ->
                 let rec_a = (mvb, L.negate b) in
                 let rec_b = (mva, L.negate a) in
-                let (_, negv) = score eval (n - 1) rec_a rec_b result in
+                let (_, negv) = score eval (n - 1) rec_a rec_b None result in
                 let v = L.negate negv in
                   match (L.comp a v, L.comp b v) with
                     | (Order.Less, Order.Less) -> (mva, a)
@@ -272,10 +273,24 @@ struct
                         score_moves (Some mv, v) (mvb, b) tl
                     | (Order.Greater, _) | (Order.Equal, _) ->
                         score_moves (mva, a) (mvb, b) tl
-    in score_moves (mva, a) (mvb, b) (B.all_moves bd)
+    in match test_mv with
+      | None ->
+          score_moves (mva, a) (mvb, b) (B.all_moves bd)
+      | Some test_mv ->
+          score_moves (mva, a) (mvb, b) (test_mv :: B.all_moves bd)
   
-  let rec strat eval bd =
-    fst (score eval R.depth (None, L.lbound) (None, L.ubound) bd)
+  let strat eval bd =
+    let handle_timeout _ = raise Timeout in
+    let alrm_behavior = Sys.Signal_handle handle_timeout in
+    let _ = Sys.set_signal Sys.sigalrm alrm_behavior in
+    let _ = Unix.alarm 60 in
+    let rec deepen depth mv =
+      try
+        let (mv', _) =
+          score eval depth (None, L.lbound) (None, L.ubound) mv bd
+        in deepen (depth + 1) mv'
+      with Timeout -> mv
+    in deepen 1 None
 end
 
 (* Standard synonyms so we can easily change implementation *)
