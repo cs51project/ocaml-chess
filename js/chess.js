@@ -145,6 +145,12 @@ function Board(strFEN)
     }
 }
 
+function handleCheckmate()
+{
+    var hd = document.getElementById("heading");
+    hd.style.color = "red";
+}
+
 // Send a request to the server via AJAX
 function sendAJAX(params, callback)
 {
@@ -199,7 +205,9 @@ function urlEncode(str)
 
 function handleSubmitResponse(response)
 {
-    if(response !== "false")
+    if(response === "checkmate")
+        handleCheckmate();
+    else if(response !== "false")
     {
         loadBoard(new Board(response));
         requestMove();
@@ -208,17 +216,10 @@ function handleSubmitResponse(response)
 
 function handleResponseNoFollowup(response)
 {
-    if(response !== "false")
+    if(response === "checkmate")
+        handleCheckmate();
+    else if(response !== "false")
         loadBoard(new Board(response));
-}
-
-function handleResponseDemo(response)
-{
-    if(response !== "false")
-    {
-        loadBoard(new Board(response));
-        requestMoveDemo();
-    }
 }
 
 /* Submit a move to the server via AJAX.
@@ -245,12 +246,6 @@ function requestMove()
 {
     var request = "q=request_move&board=" + urlEncode(board.toFEN());
     return sendAJAX(request, handleResponseNoFollowup);
-}
-
-function requestMoveDemo()
-{
-    var request = "q=request_move&board=" + urlEncode(board.toFEN());
-    return sendAJAX(request, handleResponseDemo);
 }
 
 function handleDragStart(evt)
@@ -367,6 +362,8 @@ function loadBoard(bd)
 
 function initBoard()
 {
+    var hd = document.getElementById("heading");
+    hd.style.color = "black";
     var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -";
     loadBoard(new Board(fen));
 }
