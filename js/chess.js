@@ -334,9 +334,9 @@ function loadBoard(bd)
             html += "<td class='file_" + fileName + "' id='" + id +
                     "' style='background-color: " + background +
                     "; color: " + color + ";' " +
-                    "ondragenter='handleDragEnter(event)' " + 
-                    "ondragover='handleDragOver(event)' " +
-                    "ondrop='handleDrop(this, event);'>";
+                    "ondragenter='handleDragEnter(event); return false;' " + 
+                    "ondragover='handleDragOver(event); return false;' " +
+                    "ondrop='handleDrop(this, event); return false;'>";
             
             html += "<div class='piece-container' draggable='true' " +
                     "ondragstart='handleDragStart(event)'>";
